@@ -60,7 +60,13 @@
           <button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left" style="width:32px;">&lt;</button>
           <button class="rotate-btn" @click="halvePatternLength" title="Halve pattern length" style="width:32px; font-size:1.2em;">-</button>
         </div>
-        <span style="width: 128px; min-width: 64px; text-align: center; font-size: 1.1em; user-select: none;">{{ patternLength }}</span>
+        <button class="sequencer-play-btn" @click="toggleSequencerPlay" style="font-size:2.2em; padding:0.1em 0.3em; margin: 0 8px; background: none; color: #42b983; border: none; box-shadow: none; cursor: pointer;">
+          <span v-if="!isPlaying">▶️</span>
+          <span v-else>⏸️</span>
+        </button>
+        <button @click="randomizeSequencer" title="Randomize pattern" style="font-size:2em; background: none; color: #42b983; border: none; cursor: pointer;">
+          🎲
+        </button>
         <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
           <button class="rotate-btn" @click="rotateSequencerRight" title="Rotate Right" style="width:32px;">&gt;</button>
           <button class="rotate-btn" @click="doublePatternLength" title="Double pattern length" style="width:32px; font-size:1.2em;">+</button>
@@ -68,16 +74,12 @@
       </div>
       <div class="controls" style="margin-top:1rem;  align-items: center; justify-content: center; gap: 1.5rem;">
         <div class="controls-row">
-          <button @click="randomizeSequencer" style="font-size:1.1em; padding:0.5em 1em;">
-            Random
-          </button>
+          <!-- Random button moved to sequencer-rotate-row above -->
           <label style="display: flex; align-items: center; gap: 0.3em; font-size: 1em;">
             <input type="checkbox" v-model="normalizeSegments" />
             Normalize segments
           </label>
-          <button @click="toggleSequencerPlay" style="font-size:1.1em; padding:0.5em 1.5em;">
-            {{ isPlaying ? 'Stop' : 'Play' }}
-          </button>
+          <!-- Play/Stop button moved to sequencer-rotate-row above -->
         </div>
         <div class="controls-row">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -118,7 +120,15 @@ function halvePatternLength() {
 }
 
 function doublePatternLength() {
-  patternLength.value = Math.min(64, patternLength.value * 2);
+  if (patternLength.value >= 64) return;
+  const oldLength = patternLength.value;
+  const newLength = Math.min(64, oldLength * 2);
+  // For each row, repeat the pattern in the new columns
+  for (let row = 0; row < sequencer.value.length; row++) {
+    const oldRow = sequencer.value[row].slice(0, oldLength);
+    sequencer.value[row] = oldRow.concat(oldRow.slice(0, newLength - oldLength));
+  }
+  patternLength.value = newLength;
 }
 
 function resizeSequencerColumns() {
