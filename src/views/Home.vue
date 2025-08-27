@@ -55,11 +55,26 @@
           @click="toggleCell(rowIdx, colIdx)"
         ></div>
       </div>
+      <div class="sequencer-rotate-row" style="display: flex; justify-content: center; align-items: center; margin: 0.5rem 0 0.5rem 0; gap: 4px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+          <button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left" style="width:32px;">&lt;</button>
+          <button class="rotate-btn" @click="halvePatternLength" title="Halve pattern length" style="width:32px; font-size:1.2em;">-</button>
+        </div>
+        <span style="width: 128px; min-width: 64px; text-align: center; font-size: 1.1em; user-select: none;">{{ patternLength }}</span>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+          <button class="rotate-btn" @click="rotateSequencerRight" title="Rotate Right" style="width:32px;">&gt;</button>
+          <button class="rotate-btn" @click="doublePatternLength" title="Double pattern length" style="width:32px; font-size:1.2em;">+</button>
+        </div>
+      </div>
       <div class="controls" style="margin-top:1rem;  align-items: center; justify-content: center; gap: 1.5rem;">
         <div class="controls-row">
           <button @click="randomizeSequencer" style="font-size:1.1em; padding:0.5em 1em;">
             Random
           </button>
+          <label style="display: flex; align-items: center; gap: 0.3em; font-size: 1em;">
+            <input type="checkbox" v-model="normalizeSegments" />
+            Normalize segments
+          </label>
           <button @click="toggleSequencerPlay" style="font-size:1.1em; padding:0.5em 1.5em;">
             {{ isPlaying ? 'Stop' : 'Play' }}
           </button>
@@ -67,7 +82,11 @@
         <div class="controls-row">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <label for="bpm-input" style="font-size:1em;">BPM</label>
-            <input id="bpm-input" type="number" v-model.number="bpm" min="40" max="300" step="1" style="width: 60px; font-size:1em; padding:0.2em 0.5em;" />
+            <input id="bpm-input" type="number" v-model.number="bpmInput" min="40" max="300" step="1" style="width: 60px; font-size:1em; padding:0.2em 0.5em;" />
+            <label style="display: flex; align-items: center; gap: 0.2em; font-size: 0.95em; margin-left: 0.5em;">
+              <input type="checkbox" v-model="bpmDouble" style="margin-left: 0.5em;" />
+              x2
+            </label>
           </div>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <label for="density-slider" style="font-size:1em;">Pattern density</label>
@@ -80,7 +99,65 @@
   </div>
 </template>
 <script setup>
+const patternLength = ref(8);
 
+const bpmDouble = ref(false);
+const bpmInput = computed({
+  get() {
+    return bpm.value;
+  },
+  set(val) {
+    bpm.value = val;
+  }
+});
+const effectiveBpm = computed(() => bpmDouble.value ? bpm.value * 2 : bpm.value);
+function halvePatternLength() {
+  if (patternLength.value > 1) {
+    patternLength.value = Math.max(1, Math.floor(patternLength.value / 2));
+  }
+}
+
+function doublePatternLength() {
+  patternLength.value = Math.min(64, patternLength.value * 2);
+}
+
+function resizeSequencerColumns() {
+  for (let row = 0; row < sequencer.value.length; row++) {
+    const oldRow = sequencer.value[row];
+    if (oldRow.length > patternLength.value) {
+      sequencer.value[row] = oldRow.slice(0, patternLength.value);
+    } else if (oldRow.length < patternLength.value) {
+      sequencer.value[row] = oldRow.concat(Array(patternLength.value - oldRow.length).fill(false));
+    }
+  }
+}
+
+watch(patternLength, () => {
+  resizeSequencerColumns();
+});
+function rotateSequencerLeft() {
+  const nRows = sequencer.value.length;
+  if (nRows === 0) return;
+  for (let row = 0; row < nRows; row++) {
+    const first = sequencer.value[row][0];
+    for (let col = 0; col < patternLength.value - 1; col++) {
+      sequencer.value[row][col] = sequencer.value[row][col + 1];
+    }
+    sequencer.value[row][patternLength.value - 1] = first;
+  }
+}
+
+function rotateSequencerRight() {
+  const nRows = sequencer.value.length;
+  if (nRows === 0) return;
+  for (let row = 0; row < nRows; row++) {
+    const last = sequencer.value[row][patternLength.value - 1];
+    for (let col = patternLength.value - 1; col > 0; col--) {
+      sequencer.value[row][col] = sequencer.value[row][col - 1];
+    }
+    sequencer.value[row][0] = last;
+  }
+}
 const playingSectionBounds = computed(() => {
   if (!isPlaying.value || currentStep.value < 0 || sequencer.value.length === 0) return null;
   // Find the first row with an active cell at currentStep
@@ -105,7 +182,7 @@ const patternDensity = ref(100); // percent chance for a column to get 1 square
 
 function randomizeSequencer() {
   const nRows = sequencer.value.length;
-  for (let col = 0; col < 8; col++) {
+  for (let col = 0; col < patternLength.value; col++) {
     // Use patternDensity to decide if this column gets an active cell
     const hasActive = Math.random() < (patternDensity.value / 100);
     const activeRow = hasActive ? Math.floor(Math.random() * nRows) : -1;
@@ -115,7 +192,7 @@ function randomizeSequencer() {
   }
 }
 const bpm = ref(120);
-import { ref, computed, onUnmounted, watch } from 'vue';
+import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
 import { getWaveformData } from '../utils/waveform.js';
 import { detectTransients } from '../utils/transient.js';
 const waveform = ref([]);
@@ -135,8 +212,24 @@ const sequencer = ref([]);
 
 function initSequencer() {
   const nRows = Math.max(0, transients.value.length - 1);
-  sequencer.value = Array.from({ length: nRows }, () => Array(8).fill(false));
+  sequencer.value = Array.from({ length: nRows }, () => Array(patternLength.value).fill(false));
 }
+
+// Restart sequencer with new BPM if changed while playing
+watch(bpm, (newBpm, oldBpm) => {
+  if (isPlaying.value) {
+    stopSequencer();
+    playSequencer();
+  }
+});
+// Also restart sequencer if bpmDouble changes
+watch(bpmDouble, (newVal, oldVal) => {
+  if (isPlaying.value && newVal !== oldVal) {
+    stopSequencer();
+    playSequencer();
+  }
+});
+const normalizeSegments = ref(false);
 
 // Watch for changes in transients to re-init sequencer
 watch(transients, (newTrans, oldTrans) => {
@@ -148,9 +241,12 @@ watch(transients, (newTrans, oldTrans) => {
 });
 
 function toggleCell(row, col) {
+  if (col >= patternLength.value) return;
   // Turn off all other cells in this column
   for (let r = 0; r < sequencer.value.length; r++) {
-    sequencer.value[r][col] = false;
+    if (col < sequencer.value[r].length) {
+      sequencer.value[r][col] = false;
+    }
   }
   // Toggle the clicked cell
   sequencer.value[row][col] = true;
@@ -169,10 +265,10 @@ function playSequencer() {
   isPlaying.value = true;
   currentStep.value = -1;
   let step = 0;
-  const nSteps = 8;
+  const nSteps = patternLength.value;
   const nRows = sequencer.value.length;
   // Each step is now an 8th note: 1 beat = 2 steps
-  const stepDuration = 60 / bpm.value / 2; // seconds per 8th note
+  const stepDuration = 60 / effectiveBpm.value / 2; // seconds per 8th note
   sequencerInterval = setInterval(() => {
     currentStep.value = step;
     for (let row = 0; row < nRows; row++) {
@@ -206,10 +302,37 @@ function playSection(rowIdx) {
   if (audioCtx._currentSource) {
     try { audioCtx._currentSource.stop(); } catch {}
   }
-  const source = audioCtx.createBufferSource();
-  source.buffer = audioBuffer;
-  source.connect(audioCtx.destination);
-  source.start(0, segStart, duration);
+  let source;
+  if (normalizeSegments.value) {
+    // Create a new buffer for the segment and normalize it
+    const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const segLength = Math.floor(duration * sampleRate);
+    const segmentBuffer = audioCtx.createBuffer(numChannels, segLength, sampleRate);
+    for (let ch = 0; ch < numChannels; ch++) {
+      const src = audioBuffer.getChannelData(ch);
+      const dst = segmentBuffer.getChannelData(ch);
+      const startSample = Math.floor(segStart * sampleRate);
+      const endSample = Math.min(startSample + segLength, src.length);
+      let max = 0;
+      for (let i = startSample; i < endSample; i++) {
+        if (Math.abs(src[i]) > max) max = Math.abs(src[i]);
+      }
+      const norm = max > 0 ? 1 / max : 1;
+      for (let i = 0; i < segLength && (startSample + i) < src.length; i++) {
+        dst[i] = src[startSample + i] * norm;
+      }
+    }
+    source = audioCtx.createBufferSource();
+    source.buffer = segmentBuffer;
+    source.connect(audioCtx.destination);
+    source.start(0);
+  } else {
+    source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioCtx.destination);
+    source.start(0, segStart, duration);
+  }
   audioCtx._currentSource = source;
 }
 
@@ -310,6 +433,19 @@ const waveformPoints = computed(() => {
 });
 </script>
 <style scoped>
+.rotate-btn {
+  background: #222;
+  color: #42b983;
+  border: 1px solid #42b983;
+  border-radius: 4px;
+  font-size: 1.5em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.rotate-btn:hover {
+  background: #42b983;
+  color: #fff;
+}
 .waveform-loader {
   display: flex;
   flex-direction: column;
