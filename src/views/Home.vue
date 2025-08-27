@@ -153,10 +153,10 @@ function playSequencer() {
   isPlaying.value = true;
   currentStep.value = -1;
   let step = 0;
-  const nSteps = patternLength.value;
   const nRows = sequencer.value.length;
   const stepDuration = 60 / effectiveBpm.value / 2;
   sequencerInterval = setInterval(() => {
+    const nSteps = patternLength.value;
     currentStep.value = step;
     for (let row = 0; row < nRows; row++) {
       if (sequencer.value[row] && sequencer.value[row][step]) {
@@ -251,6 +251,10 @@ function resizeSequencerColumns() {
 
 watch(patternLength, () => {
   resizeSequencerColumns();
+  if (isPlaying.value && currentStep.value >= patternLength.value) {
+    stopSequencer();
+    playSequencer();
+  }
 });
 function rotateSequencerLeft() {
   const nRows = sequencer.value.length;
