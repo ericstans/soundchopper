@@ -18,42 +18,23 @@
       <svg :width="svgWidth" :height="svgHeight" class="waveform-svg" @click="playAudio">
         <polyline :points="waveformPoints" fill="none" stroke="#42b983" stroke-width="2" />
         <g v-for="(idx, segIdx) in transients" :key="'transient-' + idx">
-          <line
-            v-if="segIdx > 0"
-            :x1="(idx / (waveform.length - 1)) * svgWidth"
-            y1="0"
-            :x2="(idx / (waveform.length - 1)) * svgWidth"
-            :y2="svgHeight"
-            :stroke="segmentEnabled[segIdx - 1] ? '#ff5252' : '#888'"
-            stroke-width="2"
-            stroke-dasharray="4,2"
-            style="pointer-events: none;"
-          />
+          <line v-if="segIdx > 0" :x1="(idx / (waveform.length - 1)) * svgWidth" y1="0"
+            :x2="(idx / (waveform.length - 1)) * svgWidth" :y2="svgHeight"
+            :stroke="segmentEnabled[segIdx - 1] ? '#ff5252' : '#888'" stroke-width="2" stroke-dasharray="4,2"
+            style="pointer-events: none;" />
         </g>
         <!-- Add transparent rects for right-click toggling -->
         <g v-for="(enabled, segIdx) in segmentEnabled" :key="'togglearea-' + segIdx">
-          <rect
-            :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth"
-            y="0"
+          <rect :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth" y="0"
             :width="((transients[segIdx + 1] - transients[segIdx]) / (waveform.length - 1)) * svgWidth"
-            :height="svgHeight"
-            fill="transparent"
-            style="cursor: pointer;"
-            @contextmenu.prevent="toggleSegmentEnabled(segIdx, $event)"
-          />
+            :height="svgHeight" fill="transparent" style="cursor: pointer;"
+            @contextmenu.prevent="toggleSegmentEnabled(segIdx, $event)" />
         </g>
         <!-- Grey overlay for disabled segments -->
         <g v-for="(enabled, segIdx) in segmentEnabled" :key="'overlay-' + segIdx">
-          <rect
-            v-if="!enabled"
-            :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth"
-            y="0"
+          <rect v-if="!enabled" :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth" y="0"
             :width="((transients[segIdx + 1] - transients[segIdx]) / (waveform.length - 1)) * svgWidth"
-            :height="svgHeight"
-            fill="#888"
-            fill-opacity="0.35"
-            style="pointer-events: none;"
-          />
+            :height="svgHeight" fill="#888" fill-opacity="0.35" style="pointer-events: none;" />
         </g>
         <!-- Highlight currently playing waveform section -->
         <rect v-if="isPlaying && currentStep.value >= 0 && playingSectionBounds" :x="playingSectionBounds.x" y="0"
@@ -121,6 +102,12 @@
               style="width: 80px;" />
             <span>{{ patternDensity }}%</span>
           </div>
+          <div style="display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem;">
+            <label for="speed-slider" style="font-size:1em;">Playback speed</label>
+            <input id="speed-slider" type="range" min="0.5" max="2" step="0.01" v-model.number="playbackSpeed"
+              style="width: 120px;" />
+            <span>{{ playbackSpeed.toFixed(2) }}x</span>
+          </div>
         </div>
       </div>
     </div>
@@ -128,9 +115,11 @@
 </template>
 <script setup>
 const bpm = ref(120);
+const playbackSpeed = ref(1.0); // 1.0 = normal speed
 import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
 import { getWaveformData } from '../utils/waveform.js';
 import { detectTransients } from '../utils/transient.js';
+import { detectBpmFromBuffer } from '../utils/bpmDetect.js';
 const waveform = ref([]);
 const loading = ref(false);
 const svgWidth = 600;
@@ -426,11 +415,13 @@ function playSection(rowIdx) {
     }
     source = audioCtx.createBufferSource();
     source.buffer = segmentBuffer;
+    source.playbackRate.value = playbackSpeed.value;
     source.connect(audioCtx.destination);
     source.start(0);
   } else {
     source = audioCtx.createBufferSource();
     source.buffer = audioBuffer;
+    source.playbackRate.value = playbackSpeed.value;
     source.connect(audioCtx.destination);
     source.start(0, segStart, duration);
   }
@@ -456,6 +447,12 @@ function onFileChange(e) {
     })
     .then(buffer => {
       audioBuffer = buffer;
+      // Try to detect BPM from buffer
+      let detectedBpm = detectBpmFromBuffer(buffer);
+      // Each column is an 8th note, so double the detected BPM
+      if (detectedBpm && detectedBpm >= 40 && detectedBpm <= 300) {
+        bpm.value = Math.min(detectedBpm * 2, 300);
+      }
       // Get waveform and transients
       getWaveformData(url).then(data => {
         waveform.value = data;
