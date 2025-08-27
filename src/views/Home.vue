@@ -41,22 +41,26 @@
           @click="toggleCell(rowIdx, colIdx)"
         ></div>
       </div>
-      <div style="margin-top:1rem; display: flex; align-items: center; justify-content: center; gap: 1.5rem;">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <label for="bpm-input" style="font-size:1em;">BPM</label>
-          <input id="bpm-input" type="number" v-model.number="bpm" min="40" max="300" step="1" style="width: 60px; font-size:1em; padding:0.2em 0.5em;" />
+      <div class="controls" style="margin-top:1rem;  align-items: center; justify-content: center; gap: 1.5rem;">
+        <div class="controls-row">
+          <button @click="randomizeSequencer" style="font-size:1.1em; padding:0.5em 1em;">
+            Random
+          </button>
+          <button @click="toggleSequencerPlay" style="font-size:1.1em; padding:0.5em 1.5em;">
+            {{ isPlaying ? 'Stop' : 'Play' }}
+          </button>
         </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <label for="density-slider" style="font-size:1em;">Pattern density</label>
-          <input id="density-slider" type="range" min="0" max="100" v-model.number="patternDensity" style="width: 80px;" />
-          <span>{{ patternDensity }}%</span>
+        <div class="controls-row">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="bpm-input" style="font-size:1em;">BPM</label>
+            <input id="bpm-input" type="number" v-model.number="bpm" min="40" max="300" step="1" style="width: 60px; font-size:1em; padding:0.2em 0.5em;" />
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="density-slider" style="font-size:1em;">Pattern density</label>
+            <input id="density-slider" type="range" min="0" max="100" v-model.number="patternDensity" style="width: 80px;" />
+            <span>{{ patternDensity }}%</span>
+          </div>
         </div>
-        <button @click="randomizeSequencer" style="font-size:1.1em; padding:0.5em 1em; margin-right:1em;">
-          Random
-        </button>
-        <button @click="toggleSequencerPlay" style="font-size:1.1em; padding:0.5em 1.5em;">
-          {{ isPlaying ? 'Stop' : 'Play' }}
-        </button>
       </div>
     </div>
   </div>
