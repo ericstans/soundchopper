@@ -26,18 +26,32 @@
           stroke-dasharray="4,2"
         />
       </g>
+      <!-- Highlight currently playing waveform section -->
+      <rect
+        v-if="isPlaying && currentStep.value >= 0 && playingSectionBounds"
+        :x="playingSectionBounds.x"
+        y="0"
+        :width="playingSectionBounds.width"
+        :height="svgHeight"
+        fill="#42b983"
+        fill-opacity="0.18"
+        stroke="#42b983"
+        stroke-width="2"
+        pointer-events="none"
+      />
     </svg>
     <div v-if="transients.length > 1" class="sequencer">
       <div
         v-for="(row, rowIdx) in sequencer.length"
         :key="'row-' + rowIdx"
         class="sequencer-row"
+        :class="{ 'playing-row': isPlaying && isRowPlaying(rowIdx) }"
       >
         <div
           v-for="(cell, colIdx) in sequencer[rowIdx]"
           :key="'cell-' + rowIdx + '-' + colIdx"
           class="sequencer-cell"
-          :class="{ active: cell }"
+          :class="{ active: cell, playing: isPlaying && isCellPlaying(rowIdx, colIdx) }"
           @click="toggleCell(rowIdx, colIdx)"
         ></div>
       </div>
@@ -66,6 +80,27 @@
   </div>
 </template>
 <script setup>
+
+const playingSectionBounds = computed(() => {
+  if (!isPlaying.value || currentStep.value < 0 || sequencer.value.length === 0) return null;
+  // Find the first row with an active cell at currentStep
+  let rowIdx = -1;
+  for (let r = 0; r < sequencer.value.length; r++) {
+    if (sequencer.value[r][currentStep.value]) {
+      rowIdx = r;
+      break;
+    }
+  }
+  if (rowIdx === -1 || transients.value.length < 2) return null;
+  const startIdx = transients.value[rowIdx];
+  const endIdx = transients.value[rowIdx + 1];
+  const x = (startIdx / (waveform.value.length - 1)) * svgWidth;
+  const width = ((endIdx - startIdx) / (waveform.value.length - 1)) * svgWidth;
+  return { x, width };
+});
+
+const isCellPlaying = (rowIdx, colIdx) => currentStep.value === colIdx && sequencer.value[rowIdx][colIdx];
+const isRowPlaying = (rowIdx) => currentStep.value >= 0 && sequencer.value[rowIdx][currentStep.value];
 const patternDensity = ref(100); // percent chance for a column to get 1 square
 
 function randomizeSequencer() {
@@ -113,7 +148,12 @@ watch(transients, (newTrans, oldTrans) => {
 });
 
 function toggleCell(row, col) {
-  sequencer.value[row][col] = !sequencer.value[row][col];
+  // Turn off all other cells in this column
+  for (let r = 0; r < sequencer.value.length; r++) {
+    sequencer.value[r][col] = false;
+  }
+  // Toggle the clicked cell
+  sequencer.value[row][col] = true;
 }
 
 function toggleSequencerPlay() {
@@ -305,5 +345,15 @@ const waveformPoints = computed(() => {
 .sequencer-cell.active {
   background: #42b983;
   border-color: #42b983;
+}
+.sequencer-cell.playing {
+  box-shadow: 0 0 0 3px #fff, 0 0 8px #42b983;
+  background: #fff;
+  border-color: #42b983;
+}
+.sequencer-row.playing-row {
+  background: rgba(66,185,131,0.08);
+  border-radius: 6px;
+  transition: background 0.2s;
 }
 </style>
