@@ -47,13 +47,14 @@
         class="sequencer-row"
         :class="{ 'playing-row': isPlaying && isRowPlaying(rowIdx) }"
       >
-        <div
-          v-for="(cell, colIdx) in sequencer[rowIdx]"
-          :key="'cell-' + rowIdx + '-' + colIdx"
-          class="sequencer-cell"
-          :class="{ active: cell, playing: isPlaying && isCellPlaying(rowIdx, colIdx) }"
-          @click="toggleCell(rowIdx, colIdx)"
-        ></div>
+          <div
+            v-for="(cell, colIdx) in sequencer[rowIdx]"
+            :key="'cell-' + rowIdx + '-' + colIdx"
+            class="sequencer-cell"
+            :class="{ active: cell, playing: isPlaying && isCellPlaying(rowIdx, colIdx) }"
+            @click="toggleCell(rowIdx, colIdx)"
+            @contextmenu.prevent="clearCell(rowIdx, colIdx)"
+          ></div>
       </div>
       <div class="sequencer-rotate-row" style="display: flex; justify-content: center; align-items: center; margin: 0.5rem 0 0.5rem 0; gap: 4px;">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
@@ -201,6 +202,11 @@ function randomizeSequencer() {
     }
   }
 }
+function clearCell(row, col) {
+  if (row >= 0 && row < sequencer.value.length && col >= 0 && col < sequencer.value[row].length) {
+    sequencer.value[row][col] = false;
+  }
+}
 const bpm = ref(120);
 import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
 import { getWaveformData } from '../utils/waveform.js';
@@ -252,13 +258,18 @@ watch(transients, (newTrans, oldTrans) => {
 
 function toggleCell(row, col) {
   if (col >= patternLength.value) return;
+  // If already active, turn it off
+  if (sequencer.value[row][col]) {
+    sequencer.value[row][col] = false;
+    return;
+  }
   // Turn off all other cells in this column
   for (let r = 0; r < sequencer.value.length; r++) {
     if (col < sequencer.value[r].length) {
       sequencer.value[r][col] = false;
     }
   }
-  // Toggle the clicked cell
+  // Turn on the clicked cell
   sequencer.value[row][col] = true;
 }
 
