@@ -56,20 +56,8 @@
           />
         </g>
         <!-- Highlight currently playing waveform section -->
-          <g v-if="isPlaying && currentStep.value >= 0 && sequencer.length">
-            <rect
-              v-for="(rowIdx, segIdx) in enabledSegmentIndices"
-              v-if="sequencer[rowIdx] && sequencer[rowIdx][currentStep.value]"
-              :key="'highlight-segment-' + segIdx"
-              :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth"
-              y="0"
-              :width="((transients[segIdx + 1] - transients[segIdx]) / (waveform.length - 1)) * svgWidth"
-              :height="svgHeight"
-              fill="#42b983"
-              fill-opacity="0.18"
-              stroke="#42b983"
-            />
-          </g>
+        <rect v-if="isPlaying && currentStep.value >= 0 && playingSectionBounds" :x="playingSectionBounds.x" y="0"
+          :width="playingSectionBounds.width" :height="svgHeight" fill="#42b983" fill-opacity="0.18" stroke="#42b983"
           stroke-width="2" pointer-events="none" />
       </svg>
     </div>
