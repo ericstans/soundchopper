@@ -1,99 +1,124 @@
 <template>
   <div class="waveform-loader">
-  <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
-  <div v-if="waveform.length" style="margin: 1rem 0; display: flex; align-items: center; gap: 1rem;">
-    <span>Sensitivity</span>
-    <button @click="decreaseSensitivity">-</button>
-    <span>{{ sensitivity.toFixed(2) }}</span>
-    <button @click="increaseSensitivity">+</button>
-  </div>
+    <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
+    <div v-if="waveform.length" style="margin: 1rem 0; display: flex; align-items: center; gap: 1rem;">
+      <span>Sensitivity</span>
+      <button @click="decreaseSensitivity">-</button>
+      <span>{{ sensitivity.toFixed(2) }}</span>
+      <button @click="increaseSensitivity">+</button>
+    </div>
     <div v-if="loading">Loading...</div>
-  <svg v-if="waveform.length" :width="svgWidth" :height="svgHeight" class="waveform-svg" @click="playAudio">
-      <polyline
-        :points="waveformPoints"
-        fill="none"
-        stroke="#42b983"
-        stroke-width="2"
-      />
-      <g v-for="idx in transients" :key="idx">
-        <line
-          :x1="(idx / (waveform.length - 1)) * svgWidth"
-          y1="0"
-          :x2="(idx / (waveform.length - 1)) * svgWidth"
-          :y2="svgHeight"
-          stroke="#ff5252"
-          stroke-width="2"
-          stroke-dasharray="4,2"
-        />
-      </g>
-      <!-- Highlight currently playing waveform section -->
-      <rect
-        v-if="isPlaying && currentStep.value >= 0 && playingSectionBounds"
-        :x="playingSectionBounds.x"
-        y="0"
-        :width="playingSectionBounds.width"
-        :height="svgHeight"
-        fill="#42b983"
-        fill-opacity="0.18"
-        stroke="#42b983"
-        stroke-width="2"
-        pointer-events="none"
-      />
-    </svg>
+    <div v-if="waveform.length" style="display: flex; align-items: center; gap: 1.2rem;">
+      <button class="circle-play-btn" @click="playFullSample" title="Play full sample">
+        <svg viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
+          <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
+          <polygon points="16,12 30,20 16,28" fill="#42b983" />
+        </svg>
+      </button>
+      <svg :width="svgWidth" :height="svgHeight" class="waveform-svg" @click="playAudio">
+        <polyline :points="waveformPoints" fill="none" stroke="#42b983" stroke-width="2" />
+        <g v-for="(idx, segIdx) in transients" :key="'transient-' + idx">
+          <line
+            v-if="segIdx > 0"
+            :x1="(idx / (waveform.length - 1)) * svgWidth"
+            y1="0"
+            :x2="(idx / (waveform.length - 1)) * svgWidth"
+            :y2="svgHeight"
+            :stroke="segmentEnabled[segIdx - 1] ? '#ff5252' : '#888'"
+            stroke-width="2"
+            stroke-dasharray="4,2"
+            style="pointer-events: none;"
+          />
+        </g>
+        <!-- Add transparent rects for right-click toggling -->
+        <g v-for="(enabled, segIdx) in segmentEnabled" :key="'togglearea-' + segIdx">
+          <rect
+            :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth"
+            y="0"
+            :width="((transients[segIdx + 1] - transients[segIdx]) / (waveform.length - 1)) * svgWidth"
+            :height="svgHeight"
+            fill="transparent"
+            style="cursor: pointer;"
+            @contextmenu.prevent="toggleSegmentEnabled(segIdx, $event)"
+          />
+        </g>
+        <!-- Grey overlay for disabled segments -->
+        <g v-for="(enabled, segIdx) in segmentEnabled" :key="'overlay-' + segIdx">
+          <rect
+            v-if="!enabled"
+            :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth"
+            y="0"
+            :width="((transients[segIdx + 1] - transients[segIdx]) / (waveform.length - 1)) * svgWidth"
+            :height="svgHeight"
+            fill="#888"
+            fill-opacity="0.35"
+            style="pointer-events: none;"
+          />
+        </g>
+        <!-- Highlight currently playing waveform section -->
+        <rect v-if="isPlaying && currentStep.value >= 0 && playingSectionBounds" :x="playingSectionBounds.x" y="0"
+          :width="playingSectionBounds.width" :height="svgHeight" fill="#42b983" fill-opacity="0.18" stroke="#42b983"
+          stroke-width="2" pointer-events="none" />
+      </svg>
+    </div>
     <div v-if="transients.length > 1" class="sequencer">
-      <div
-        v-for="(row, rowIdx) in sequencer.length"
-        :key="'row-' + rowIdx"
-        class="sequencer-row"
-        :class="{ 'playing-row': isPlaying && isRowPlaying(rowIdx) }"
-      >
-          <div
-            v-for="(cell, colIdx) in sequencer[rowIdx]"
-            :key="'cell-' + rowIdx + '-' + colIdx"
-            class="sequencer-cell"
-            :class="{ active: cell, playing: isPlaying && isCellPlaying(rowIdx, colIdx) }"
-            @click="toggleCell(rowIdx, colIdx)"
-            @contextmenu.prevent="clearCell(rowIdx, colIdx)"
-          ></div>
+      <div v-for="(row, rowIdx) in sequencer.length" :key="'row-' + rowIdx" class="sequencer-row"
+        :class="{ 'playing-row': isPlaying && isRowPlaying(rowIdx) }">
+        <div v-for="(cell, colIdx) in sequencer[rowIdx]" :key="'cell-' + rowIdx + '-' + colIdx" class="sequencer-cell"
+          :class="{ active: cell, playing: isPlaying && isCellPlaying(rowIdx, colIdx) }"
+          @click="toggleCell(rowIdx, colIdx)" @contextmenu.prevent="clearCell(rowIdx, colIdx)"></div>
       </div>
-      <div class="sequencer-rotate-row" style="display: flex; justify-content: center; align-items: center; margin: 0.5rem 0 0.5rem 0; gap: 4px;">
+      <div class="sequencer-rotate-row"
+        style="display: flex; justify-content: center; align-items: center; margin: 0.5rem 0 0.5rem 0; gap: 4px;">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
           <button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left" style="width:32px;">&lt;</button>
-          <button class="rotate-btn" @click="halvePatternLength" title="Halve pattern length" style="width:32px; font-size:1.2em;">-</button>
+          <button class="rotate-btn" @click="halvePatternLength" title="Halve pattern length"
+            style="width:32px; font-size:1.2em;">-</button>
         </div>
-        <button class="sequencer-play-btn" @click="toggleSequencerPlay" style="font-size:2.2em; padding:0.1em 0.3em; margin: 0 8px; background: none; color: #42b983; border: none; box-shadow: none; cursor: pointer;">
-          <span v-if="!isPlaying">▶️</span>
-          <span v-else>⏸️</span>
+        <button class="circle-play-btn" @click="toggleSequencerPlay" title="{{ isPlaying ? 'Pause' : 'Play' }}"
+          style="margin: 0 8px;">
+          <svg v-if="!isPlaying" viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
+            <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
+            <polygon points="16,12 30,20 16,28" fill="#42b983" />
+          </svg>
+          <svg v-else viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
+            <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
+            <rect x="13" y="12" width="5" height="16" rx="2" fill="#42b983" />
+            <rect x="22" y="12" width="5" height="16" rx="2" fill="#42b983" />
+          </svg>
         </button>
-        <button @click="randomizeSequencer" title="Randomize pattern" style="font-size:2em; background: none; color: #42b983; border: none; cursor: pointer;">
+        <button @click="randomizeSequencer" title="Randomize pattern"
+          style="font-size:2em; background: none; color: #42b983; border: none; cursor: pointer;">
           🎲
         </button>
         <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
-          <button class="rotate-btn" @click="rotateSequencerRight" title="Rotate Right" style="width:32px;">&gt;</button>
-          <button class="rotate-btn" @click="doublePatternLength" title="Double pattern length" style="width:32px; font-size:1.2em;">+</button>
+          <button class="rotate-btn" @click="rotateSequencerRight" title="Rotate Right"
+            style="width:32px;">&gt;</button>
+          <button class="rotate-btn" @click="doublePatternLength" title="Double pattern length"
+            style="width:32px; font-size:1.2em;">+</button>
         </div>
       </div>
       <div class="controls" style="margin-top:1rem;  align-items: center; justify-content: center; gap: 1.5rem;">
         <div class="controls-row">
-          <!-- Random button moved to sequencer-rotate-row above -->
-          <label style="display: flex; align-items: center; gap: 0.3em; font-size: 1em;">
-            <input type="checkbox" v-model="normalizeSegments" />
-            Normalize segments
-          </label>
-          <!-- Play/Stop button moved to sequencer-rotate-row above -->
-        </div>
-        <div class="controls-row">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <label for="bpm-input" style="font-size:1em;">BPM</label>
-            <input id="bpm-input" type="number" v-model.number="bpmInput" min="40" max="300" step="1" style="width: 60px; font-size:1em; padding:0.2em 0.5em;" />
+            <input id="bpm-input" type="number" v-model.number="bpmInput" min="40" max="300" step="1"
+              style="width: 60px; font-size:1em; padding:0.2em 0.5em;" />
             <label style="display: flex; align-items: center; gap: 0.2em; font-size: 0.95em; margin-left: 0.5em;">
               <input type="checkbox" v-model="bpmDouble" style="margin-left: 0.5em;" />
               x2
             </label>
           </div>
+          <div class="controls-row">
+            <label style="display: flex; align-items: center; gap: 0.3em; font-size: 1em;">
+              <input type="checkbox" v-model="normalizeSegments" />
+              Normalize segments
+            </label>
+          </div>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <label for="density-slider" style="font-size:1em;">Pattern density</label>
-            <input id="density-slider" type="range" min="0" max="100" v-model.number="patternDensity" style="width: 80px;" />
+            <input id="density-slider" type="range" min="0" max="100" v-model.number="patternDensity"
+              style="width: 80px;" />
             <span>{{ patternDensity }}%</span>
           </div>
         </div>
@@ -102,6 +127,98 @@
   </div>
 </template>
 <script setup>
+const bpm = ref(120);
+import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
+import { getWaveformData } from '../utils/waveform.js';
+import { detectTransients } from '../utils/transient.js';
+const waveform = ref([]);
+const loading = ref(false);
+const svgWidth = 600;
+const svgHeight = 100;
+const audioUrl = ref(null);
+let audio = null;
+const transients = ref([]);
+let audioBuffer = null;
+let audioCtx = null;
+const sensitivity = ref(0.1); // Lower = more sensitive
+const isPlaying = ref(false);
+const currentStep = ref(-1);
+let sequencerInterval = null;
+const sequencer = ref([]);
+// Track enabled/disabled state for each segment (between transients)
+const segmentEnabled = ref([]);
+
+// When transients change, reset enabled state (all enabled by default)
+watch(transients, (newTrans) => {
+  segmentEnabled.value = Array(Math.max(0, newTrans.length - 1)).fill(true);
+});
+
+// Helper: get enabled segment indices
+const enabledSegmentIndices = computed(() => segmentEnabled.value
+  .map((enabled, i) => enabled ? i : null)
+  .filter(i => i !== null));
+
+// Patch playSequencer to use enabled segments
+function playSequencer() {
+  if (!audioBuffer || !audioCtx) return;
+  isPlaying.value = true;
+  currentStep.value = -1;
+  let step = 0;
+  const nSteps = patternLength.value;
+  const nRows = sequencer.value.length;
+  const stepDuration = 60 / effectiveBpm.value / 2;
+  sequencerInterval = setInterval(() => {
+    currentStep.value = step;
+    for (let row = 0; row < nRows; row++) {
+      if (sequencer.value[row] && sequencer.value[row][step]) {
+        playSection(row);
+      }
+    }
+    step = (step + 1) % nSteps;
+  }, stepDuration * 1000);
+}
+
+// Patch isCellPlaying/isRowPlaying to use enabled segments
+
+// Right-click waveform segment to toggle enabled/disabled
+function toggleSegmentEnabled(idx, e) {
+  e.preventDefault();
+  if (idx < 0 || idx >= segmentEnabled.value.length) return;
+  const wasEnabled = segmentEnabled.value[idx];
+  segmentEnabled.value[idx] = !segmentEnabled.value[idx];
+  if (wasEnabled) {
+    // Remove the row for this segment from the sequencer
+    let rowIdx = 0;
+    for (let i = 0; i < idx; i++) {
+      if (segmentEnabled.value[i]) rowIdx++;
+    }
+    sequencer.value.splice(rowIdx, 1);
+  } else {
+    // Re-enable: insert a blank row at the correct position
+    let rowIdx = 0;
+    for (let i = 0; i < idx; i++) {
+      if (segmentEnabled.value[i]) rowIdx++;
+    }
+    sequencer.value.splice(rowIdx, 0, Array(patternLength.value).fill(false));
+  }
+  // If playing, stop and restart sequencer to avoid index mismatches
+  if (isPlaying.value) {
+    stopSequencer();
+    playSequencer();
+  }
+}
+function playFullSample() {
+  if (!audioBuffer || !audioCtx) return;
+  // Stop previous source if any
+  if (audioCtx._currentSource) {
+    try { audioCtx._currentSource.stop(); } catch { }
+  }
+  const source = audioCtx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(audioCtx.destination);
+  source.start(0);
+  audioCtx._currentSource = source;
+}
 const patternLength = ref(8);
 
 const bpmDouble = ref(false);
@@ -207,27 +324,11 @@ function clearCell(row, col) {
     sequencer.value[row][col] = false;
   }
 }
-const bpm = ref(120);
-import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
-import { getWaveformData } from '../utils/waveform.js';
-import { detectTransients } from '../utils/transient.js';
-const waveform = ref([]);
-const loading = ref(false);
-const svgWidth = 600;
-const svgHeight = 100;
-const audioUrl = ref(null);
-let audio = null;
-const transients = ref([]);
-let audioBuffer = null;
-let audioCtx = null;
-const sensitivity = ref(0.1); // Lower = more sensitive
-const isPlaying = ref(false);
-const currentStep = ref(-1);
-let sequencerInterval = null;
-const sequencer = ref([]);
+
 
 function initSequencer() {
-  const nRows = Math.max(0, transients.value.length - 1);
+  // Only include enabled segments
+  const nRows = segmentEnabled.value.filter(Boolean).length;
   sequencer.value = Array.from({ length: nRows }, () => Array(patternLength.value).fill(false));
 }
 
@@ -281,27 +382,6 @@ function toggleSequencerPlay() {
   }
 }
 
-function playSequencer() {
-  if (!audioBuffer || !audioCtx) return;
-  isPlaying.value = true;
-  currentStep.value = -1;
-  let step = 0;
-  const nSteps = patternLength.value;
-  const nRows = sequencer.value.length;
-  // Each step is now an 8th note: 1 beat = 2 steps
-  const stepDuration = 60 / effectiveBpm.value / 2; // seconds per 8th note
-  sequencerInterval = setInterval(() => {
-    currentStep.value = step;
-    for (let row = 0; row < nRows; row++) {
-      if (sequencer.value[row][step]) {
-        // Play section for this row
-        playSection(row);
-      }
-    }
-    step = (step + 1) % nSteps;
-  }, stepDuration * 1000);
-}
-
 function stopSequencer() {
   isPlaying.value = false;
   currentStep.value = -1;
@@ -321,7 +401,7 @@ function playSection(rowIdx) {
   const duration = Math.max(0.1, segEnd - segStart);
   // Stop previous source if any
   if (audioCtx._currentSource) {
-    try { audioCtx._currentSource.stop(); } catch {}
+    try { audioCtx._currentSource.stop(); } catch { }
   }
   let source;
   if (normalizeSegments.value) {
@@ -435,7 +515,7 @@ function playAudio(event) {
   }
   // Stop previous source if any
   if (audioCtx._currentSource) {
-    try { audioCtx._currentSource.stop(); } catch {}
+    try { audioCtx._currentSource.stop(); } catch { }
   }
   const source = audioCtx.createBufferSource();
   source.buffer = audioBuffer;
@@ -454,6 +534,31 @@ const waveformPoints = computed(() => {
 });
 </script>
 <style scoped>
+.circle-play-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  box-shadow: 0 2px 8px #0002;
+}
+
+.circle-play-btn:hover svg circle {
+  fill: #42b983;
+  stroke: #fff;
+}
+
+.circle-play-btn:hover svg polygon,
+.circle-play-btn:hover svg rect {
+  fill: #fff;
+}
+
 .rotate-btn {
   background: #222;
   color: #42b983;
@@ -463,16 +568,19 @@ const waveformPoints = computed(() => {
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
+
 .rotate-btn:hover {
   background: #42b983;
   color: #fff;
 }
+
 .waveform-loader {
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-top: 2rem;
 }
+
 .waveform-svg {
   margin-top: 1rem;
   background: #222;
@@ -486,10 +594,12 @@ const waveformPoints = computed(() => {
   gap: 4px;
   align-items: center;
 }
+
 .sequencer-row {
   display: flex;
   gap: 4px;
 }
+
 .sequencer-cell {
   width: 32px;
   height: 32px;
@@ -499,17 +609,20 @@ const waveformPoints = computed(() => {
   transition: background 0.2s;
   cursor: pointer;
 }
+
 .sequencer-cell.active {
   background: #42b983;
   border-color: #42b983;
 }
+
 .sequencer-cell.playing {
   box-shadow: 0 0 0 3px #fff, 0 0 8px #42b983;
   background: #fff;
   border-color: #42b983;
 }
+
 .sequencer-row.playing-row {
-  background: rgba(66,185,131,0.08);
+  background: rgba(66, 185, 131, 0.08);
   border-radius: 6px;
   transition: background 0.2s;
 }
