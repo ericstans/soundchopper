@@ -71,7 +71,10 @@
         :class="{ 'playing-row': isPlaying && isRowPlaying(rowIdx) }">
         <div v-for="(cell, colIdx) in sequencer[rowIdx]" :key="'cell-' + rowIdx + '-' + colIdx" class="sequencer-cell"
           :class="{ active: cell, playing: isPlaying && isCellPlaying(rowIdx, colIdx) }"
-          @click="toggleCell(rowIdx, colIdx)" @contextmenu.prevent="clearCell(rowIdx, colIdx)"></div>
+          @mousedown="onCellMouseDown(rowIdx, colIdx, $event)"
+          @mouseenter="onCellMouseEnter(rowIdx, colIdx, $event)"
+          @mouseup="onCellMouseUp(rowIdx, colIdx, $event)"
+          @contextmenu.prevent="clearCell(rowIdx, colIdx)"></div>
       </div>
       <!-- Lock icons row -->
       <div class="sequencer-lock-row" style="display: flex; gap: 4px; margin-bottom: 0.5rem; justify-content: left;">
@@ -157,6 +160,47 @@
   </div>
 </template>
 <script setup>
+// Drag-to-enable state
+const isDragging = ref(false);
+const dragRow = ref(null);
+const dragButton = ref(null);
+function onCellMouseDown(row, col, e) {
+  if (e.button !== 0) return; // Only left mouse
+  isDragging.value = true;
+  dragRow.value = row;
+  dragButton.value = e.button;
+  enableCell(row, col);
+  window.addEventListener('mouseup', onGridMouseUp);
+}
+function onCellMouseEnter(row, col, e) {
+  if (isDragging.value && dragRow.value === row && dragButton.value === 0) {
+    enableCell(row, col);
+  }
+}
+function onCellMouseUp(row, col, e) {
+  if (isDragging.value && dragRow.value === row && dragButton.value === 0) {
+    isDragging.value = false;
+    dragRow.value = null;
+    dragButton.value = null;
+    window.removeEventListener('mouseup', onGridMouseUp);
+  }
+}
+function onGridMouseUp() {
+  isDragging.value = false;
+  dragRow.value = null;
+  dragButton.value = null;
+  window.removeEventListener('mouseup', onGridMouseUp);
+}
+function enableCell(row, col) {
+  if (col >= patternLength.value) return;
+  // Only one cell per column: turn off all others in this column
+  for (let r = 0; r < sequencer.value.length; r++) {
+    if (col < sequencer.value[r].length) {
+      sequencer.value[r][col] = false;
+    }
+  }
+  sequencer.value[row][col] = true;
+}
 const guessBpmOnImport = ref(false);
 function playSegmentByIndex(segIdx) {
   if (!audioBuffer || !audioCtx || !transients.value.length) return;
@@ -446,7 +490,7 @@ function playSequencer() {
     // Odd steps (2nd, 4th, etc) are delayed by swing amount
     if (step % 2 === 1) {
       stepDelay = baseStepDuration * (1 + currentSwingFrac);
-    } else if (step % 2 === 0 && step !== 0) {
+    } else if (step % 2 === 0) {
       // Even steps after a swung odd step are shortened to keep the bar length
       stepDelay = baseStepDuration * (1 - currentSwingFrac);
     }
@@ -639,13 +683,12 @@ function toggleCell(row, col) {
     sequencer.value[row][col] = false;
     return;
   }
-  // Turn off all other cells in this column
+  // Turn on only this cell in this column (classic behavior)
   for (let r = 0; r < sequencer.value.length; r++) {
     if (col < sequencer.value[r].length) {
       sequencer.value[r][col] = false;
     }
   }
-  // Turn on the clicked cell
   sequencer.value[row][col] = true;
 }
  
