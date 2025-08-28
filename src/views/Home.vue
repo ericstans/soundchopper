@@ -61,6 +61,7 @@
     </div>
     <div v-if="transients.length > 1" class="sequencer">
       <div v-for="(row, rowIdx) in sequencer.length" :key="'row-' + rowIdx" class="sequencer-row"
+        v-show="segmentEnabled[rowIdx]"
         :class="{ 'playing-row': isPlaying && isRowPlaying(rowIdx) }">
         <div v-for="(cell, colIdx) in sequencer[rowIdx]" :key="'cell-' + rowIdx + '-' + colIdx" class="sequencer-cell"
           :class="{ active: cell, playing: isPlaying && isCellPlaying(rowIdx, colIdx) }"
@@ -435,29 +436,13 @@ function playSequencer() {
 function toggleSegmentEnabled(idx, e) {
   e.preventDefault();
   if (idx < 0 || idx >= segmentEnabled.value.length) return;
-  const wasEnabled = segmentEnabled.value[idx];
   segmentEnabled.value[idx] = !segmentEnabled.value[idx];
-  // Rebuild sequencer so each row matches the correct enabled segment
-  const oldSequencer = sequencer.value.slice();
-  const newSequencer = [];
-  let oldRow = 0;
-  for (let i = 0; i < segmentEnabled.value.length; i++) {
-    if (segmentEnabled.value[i]) {
-      // If this segment was enabled before, preserve its row data
-      if (oldRow < oldSequencer.length) {
-        newSequencer.push(oldSequencer[oldRow]);
-        oldRow++;
-      } else {
-        newSequencer.push(Array(patternLength.value).fill(false));
-      }
-    } else {
-      // If segment is disabled, skip its row in oldSequencer
-      if (wasEnabled && i === idx) {
-        oldRow++;
-      }
+  // If disabling, clear all cells in that row
+  if (!segmentEnabled.value[idx] && sequencer.value[idx]) {
+    for (let col = 0; col < sequencer.value[idx].length; col++) {
+      sequencer.value[idx][col] = false;
     }
   }
-  sequencer.value = newSequencer;
   // If playing, stop and restart sequencer to avoid index mismatches
   if (isPlaying.value) {
     stopSequencer();
