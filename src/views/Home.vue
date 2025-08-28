@@ -265,6 +265,9 @@ const builtinLoops = [
   { label: 'Fake 909', value: '/soundchopper/loops/fake909.wav' },
   { label: 'Ping Pong', value: '/soundchopper/loops/ping pong.wav' },
   { label: 'Synth', value: '/soundchopper/loops/synth.wav' },
+  { label: 'track1', value: '/soundchopper/loops/track1.wav' },
+  { label: 'track2', value: '/soundchopper/loops/track2.wav' },
+  { label: 'track3', value: '/soundchopper/loops/track3.wav' },
 ];
 const selectedLoop = ref("");
 
@@ -328,6 +331,7 @@ const enabledSegmentIndices = computed(() => segmentEnabled.value
   .map((enabled, i) => enabled ? i : null)
   .filter(i => i !== null));
 
+// Patch playSequencer to use enabled segments
 function playSequencer() {
   if (!audioBuffer || !audioCtx) return;
   isPlaying.value = true;
