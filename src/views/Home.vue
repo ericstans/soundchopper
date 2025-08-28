@@ -123,8 +123,8 @@
 <script setup>
 // Built-in loops (update this list if you add more files to public/loops)
 const builtinLoops = [
-  { label: 'Fake 909', value: '/soundchopper/public/loops/fake909.wav' },
-  { label: 'Ping Pong', value: '/soundchopper/public/loops/ping pong.wav' },
+  { label: 'Fake 909', value: '/soundchopper/loops/fake909.wav' },
+  { label: 'Ping Pong', value: '/soundchopper/loops/ping pong.wav' },
 ];
 const selectedLoop = ref("");
 
@@ -173,6 +173,7 @@ const sensitivity = ref(0.1); // Lower = more sensitive
 const isPlaying = ref(false);
 const currentStep = ref(-1);
 let sequencerInterval = null;
+let activeSources = [];
 const sequencer = ref([]);
 // Track enabled/disabled state for each segment (between transients)
 const segmentEnabled = ref([]);
@@ -215,21 +216,27 @@ function toggleSegmentEnabled(idx, e) {
   if (idx < 0 || idx >= segmentEnabled.value.length) return;
   const wasEnabled = segmentEnabled.value[idx];
   segmentEnabled.value[idx] = !segmentEnabled.value[idx];
-  if (wasEnabled) {
-    // Remove the row for this segment from the sequencer
-    let rowIdx = 0;
-    for (let i = 0; i < idx; i++) {
-      if (segmentEnabled.value[i]) rowIdx++;
+  // Rebuild sequencer so each row matches the correct enabled segment
+  const oldSequencer = sequencer.value.slice();
+  const newSequencer = [];
+  let oldRow = 0;
+  for (let i = 0; i < segmentEnabled.value.length; i++) {
+    if (segmentEnabled.value[i]) {
+      // If this segment was enabled before, preserve its row data
+      if (oldRow < oldSequencer.length) {
+        newSequencer.push(oldSequencer[oldRow]);
+        oldRow++;
+      } else {
+        newSequencer.push(Array(patternLength.value).fill(false));
+      }
+    } else {
+      // If segment is disabled, skip its row in oldSequencer
+      if (wasEnabled && i === idx) {
+        oldRow++;
+      }
     }
-    sequencer.value.splice(rowIdx, 1);
-  } else {
-    // Re-enable: insert a blank row at the correct position
-    let rowIdx = 0;
-    for (let i = 0; i < idx; i++) {
-      if (segmentEnabled.value[i]) rowIdx++;
-    }
-    sequencer.value.splice(rowIdx, 0, Array(patternLength.value).fill(false));
   }
+  sequencer.value = newSequencer;
   // If playing, stop and restart sequencer to avoid index mismatches
   if (isPlaying.value) {
     stopSequencer();
@@ -419,6 +426,12 @@ function stopSequencer() {
   isPlaying.value = false;
   currentStep.value = -1;
   if (sequencerInterval) clearInterval(sequencerInterval);
+  if (activeSources && activeSources.length) {
+    for (const src of activeSources) {
+      src.stop();
+    }
+    activeSources = [];
+  }
 }
 
 onUnmounted(() => {
@@ -437,6 +450,7 @@ function playSection(rowIdx) {
     try { audioCtx._currentSource.stop(); } catch { }
   }
   let source;
+  activeSources = activeSources.filter(src => src && typeof src.stop === 'function');
   if (normalizeSegments.value) {
     // Create a new buffer for the segment and normalize it
     const numChannels = audioBuffer.numberOfChannels;
@@ -457,19 +471,20 @@ function playSection(rowIdx) {
         dst[i] = src[startSample + i] * norm;
       }
     }
-    source = audioCtx.createBufferSource();
-    source.buffer = segmentBuffer;
-    source.playbackRate.value = playbackSpeed.value;
-    source.connect(audioCtx.destination);
-    source.start(0);
+  source = audioCtx.createBufferSource();
+  source.buffer = segmentBuffer;
+  source.playbackRate.value = playbackSpeed.value;
+  source.connect(audioCtx.destination);
+  source.start(0);
   } else {
-    source = audioCtx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.playbackRate.value = playbackSpeed.value;
-    source.connect(audioCtx.destination);
-    source.start(0, segStart, duration);
+  source = audioCtx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.playbackRate.value = playbackSpeed.value;
+  source.connect(audioCtx.destination);
+  source.start(0, segStart, duration);
   }
   audioCtx._currentSource = source;
+  if (source) activeSources.push(source);
 }
 
 function onFileChange(e) {
@@ -506,15 +521,15 @@ function onFileChange(e) {
     });
 }
 
-function updateTransients() {
+function updateTransients(debug = false) {
   if (!waveform.value.length) return;
   transients.value = detectAdjustedTransients(waveform.value, sensitivity.value, 5);
-  console.log('Transients detected:', transients.value);
+  if (debug) console.log('Transients detected:', transients.value);
   if (transients.value.length) {
     const xs = transients.value.map(idx => (idx / (waveform.value.length - 1)) * svgWidth);
-    console.log('Transient X positions:', xs);
+    if (debug) console.log('Transient X positions:', xs);
   } else {
-    console.warn('No transients detected. Try lowering the threshold or using a more percussive audio file.');
+    if (debug) console.warn('No transients detected. Try lowering the threshold or using a more percussive audio file.');
   }
 }
 
