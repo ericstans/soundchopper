@@ -1,10 +1,6 @@
 # soundchopper
 
-Chop chop
-
-## Recommended IDE Setup
-
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Utility for chopping sample by transients and playing random sequences.
 
 ## Customize configuration
 
@@ -27,3 +23,7 @@ npm run dev
 ```sh
 npm run build
 ```
+
+## Credits
+
+Knife icon from https://icon-icons.com/icon/knife-blade-weapon-cut-chop-kitchen-cooking/142019
