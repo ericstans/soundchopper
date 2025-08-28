@@ -157,6 +157,15 @@
         </div>
       </div>
     </div>
+    <div class="info" v-if="waveform.length">
+      <div class="info-title">Known issues:</div>
+      <ul>
+        <li>Transient detection only uses velocity so doesn't get every transient.</li>
+        <li>Halving or doubling the sequence length doesn't apply correctly unless you pause and play.</li>
+        <li>The first note doesn't play after starting the sequence.</li>
+      </ul>
+      <div class="info-contact">Find something else? Contact me: <a href="mailto:eric@estansbury.net">eric@estansbury.net</a></div>
+    </div>
   </div>
 </template>
 <script setup>
@@ -878,6 +887,17 @@ const waveformPoints = computed(() => {
 });
 </script>
 <style scoped>
+.info{
+  padding-top:1em;
+  max-width:500px;
+}
+.info-title{
+  text-align: center;
+}
+.info-contact{
+  margin-top:1em;
+  text-align: center;
+}
 .circle-play-btn {
   width: 48px;
   height: 48px;
