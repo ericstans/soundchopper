@@ -193,6 +193,11 @@ function onGridMouseUp() {
 }
 function enableCell(row, col) {
   if (col >= patternLength.value) return;
+  // If already active, deactivate (toggle off)
+  if (sequencer.value[row][col]) {
+    sequencer.value[row][col] = false;
+    return;
+  }
   // Only one cell per column: turn off all others in this column
   for (let r = 0; r < sequencer.value.length; r++) {
     if (col < sequencer.value[r].length) {
