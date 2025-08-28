@@ -119,6 +119,12 @@
               style="width: 120px;" />
             <span>{{ playbackSpeed.toFixed(2) }}x</span>
           </div>
+          <div style="display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem;">
+            <label for="swing-slider" style="font-size:1em;">Swing</label>
+            <input id="swing-slider" type="range" min="0" max="50" step="1" v-model.number="swing"
+              style="width: 120px;" />
+            <span>{{ swing }}%</span>
+          </div>
           <div class="controls-row" style="text-align:center;">
             <button @click="exportSequencerToWav" style="margin-bottom:1rem; font-size:1em; padding:0.5em 1em; background:#42b983; color:#fff; border:none; border-radius:4px; cursor:pointer;">Export to WAV</button>
           </div>
@@ -128,7 +134,14 @@
   </div>
 </template>
 <script setup>
+// Swing amount (0-100)
+const swing = ref(0);
 const isFullSamplePlaying = ref(false);
+// Real-time swing update: update swingFrac for next step
+let currentSwingFrac = 0;
+watch(swing, (newVal) => {
+  currentSwingFrac = swing.value / 100 * 0.5;
+});
 
 function toggleFullSamplePlay() {
   if (isFullSamplePlaying.value) {
@@ -315,24 +328,37 @@ const enabledSegmentIndices = computed(() => segmentEnabled.value
   .map((enabled, i) => enabled ? i : null)
   .filter(i => i !== null));
 
-// Patch playSequencer to use enabled segments
 function playSequencer() {
   if (!audioBuffer || !audioCtx) return;
   isPlaying.value = true;
   currentStep.value = -1;
   let step = 0;
   const nRows = sequencer.value.length;
-  const stepDuration = 60 / effectiveBpm.value / 2;
-  sequencerInterval = setInterval(() => {
-    const nSteps = patternLength.value;
+  const nSteps = patternLength.value;
+  const baseStepDuration = 60 / effectiveBpm.value / 2;
+  currentSwingFrac = swing.value / 100;
+
+  function scheduleStep() {
+    if (!isPlaying.value) return;
     currentStep.value = step;
     for (let row = 0; row < nRows; row++) {
       if (sequencer.value[row] && sequencer.value[row][step]) {
         playSection(row);
       }
     }
+    // Calculate delay for next step using current swing value
+    let stepDelay = baseStepDuration;
+    // Odd steps (2nd, 4th, etc) are delayed by swing amount
+    if (step % 2 === 1) {
+      stepDelay = baseStepDuration * (1 + currentSwingFrac);
+    } else if (step % 2 === 0 && step !== 0) {
+      // Even steps after a swung odd step are shortened to keep the bar length
+      stepDelay = baseStepDuration * (1 - currentSwingFrac);
+    }
     step = (step + 1) % nSteps;
-  }, stepDuration * 1000);
+    sequencerInterval = setTimeout(scheduleStep, stepDelay * 1000);
+  }
+  scheduleStep();
 }
 
 // Patch isCellPlaying/isRowPlaying to use enabled segments
@@ -557,7 +583,7 @@ function toggleSequencerPlay() {
 function stopSequencer() {
   isPlaying.value = false;
   currentStep.value = -1;
-  if (sequencerInterval) clearInterval(sequencerInterval);
+  if (sequencerInterval) clearTimeout(sequencerInterval);
   if (activeSources && activeSources.length) {
     for (const src of activeSources) {
       src.stop();
