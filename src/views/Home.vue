@@ -16,10 +16,14 @@
     </div>
     <div v-if="loading">Loading...</div>
     <div v-if="waveform.length" style="display: flex; align-items: center; gap: 1.2rem;">
-      <button class="circle-play-btn" @click="playFullSample" title="Play full sample">
-        <svg viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
+      <button class="circle-play-btn" @click="toggleFullSamplePlay" :title="isFullSamplePlaying ? 'Stop' : 'Play full sample'">
+        <svg v-if="!isFullSamplePlaying" viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
           <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
           <polygon points="16,12 30,20 16,28" fill="#42b983" />
+        </svg>
+        <svg v-else viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
+          <circle cx="20" cy="20" r="19" fill="#222" stroke="#ff5252" stroke-width="2" />
+          <rect x="13" y="12" width="14" height="16" rx="2" fill="#ff5252" />
         </svg>
       </button>
       <svg :width="svgWidth" :height="svgHeight" class="waveform-svg" @click="playAudio">
@@ -115,16 +119,139 @@
               style="width: 120px;" />
             <span>{{ playbackSpeed.toFixed(2) }}x</span>
           </div>
+          <div class="controls-row" style="text-align:center;">
+            <button @click="exportSequencerToWav" style="margin-bottom:1rem; font-size:1em; padding:0.5em 1em; background:#42b983; color:#fff; border:none; border-radius:4px; cursor:pointer;">Export to WAV</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+const isFullSamplePlaying = ref(false);
+
+function toggleFullSamplePlay() {
+  if (isFullSamplePlaying.value) {
+    stopFullSample();
+  } else {
+    playFullSample();
+  }
+}
+
+function stopFullSample() {
+  if (audioCtx && audioCtx._currentSource) {
+    try { audioCtx._currentSource.stop(); } catch {}
+    audioCtx._currentSource = null;
+  }
+  isFullSamplePlaying.value = false;
+}
+// Helper: encode AudioBuffer to WAV (16-bit PCM, stereo/mono)
+function encodeWAV(audioBuffer) {
+  const numChannels = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+  const length = audioBuffer.length * numChannels * 2 + 44;
+  const buffer = new ArrayBuffer(length);
+  const view = new DataView(buffer);
+  // RIFF identifier 'RIFF'
+  [0x52,0x49,0x46,0x46].forEach((c,i)=>view.setUint8(i,c));
+  view.setUint32(4, length - 8, true); // file length - 8
+  // 'WAVE'
+  [0x57,0x41,0x56,0x45].forEach((c,i)=>view.setUint8(8+i,c));
+  // 'fmt '
+  [0x66,0x6d,0x74,0x20].forEach((c,i)=>view.setUint8(12+i,c));
+  view.setUint32(16, 16, true); // PCM chunk size
+  view.setUint16(20, 1, true); // PCM format
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * 2, true); // byte rate
+  view.setUint16(32, numChannels * 2, true); // block align
+  view.setUint16(34, 16, true); // bits per sample
+  // 'data'
+  [0x64,0x61,0x74,0x61].forEach((c,i)=>view.setUint8(36+i,c));
+  view.setUint32(40, length - 44, true);
+  // Write PCM samples
+  let offset = 44;
+  for (let i = 0; i < audioBuffer.length; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+      let sample = audioBuffer.getChannelData(ch)[i];
+      sample = Math.max(-1, Math.min(1, sample));
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+      offset += 2;
+    }
+  }
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+async function exportSequencerToWav() {
+  if (!audioBuffer || !transients.value.length || !sequencer.value.length) return;
+  const nRows = sequencer.value.length;
+  const nCols = patternLength.value;
+  const stepDuration = 60 / effectiveBpm.value / 2; // seconds per step
+  const totalDuration = nCols * stepDuration;
+  const sampleRate = audioBuffer.sampleRate;
+  const offlineCtx = new OfflineAudioContext(audioBuffer.numberOfChannels, Math.ceil(totalDuration * sampleRate), sampleRate);
+  // For each step, schedule enabled segments
+  for (let col = 0; col < nCols; col++) {
+    for (let row = 0; row < nRows; row++) {
+      if (sequencer.value[row][col]) {
+        // Find segment start/end
+        const segIdx = enabledSegmentIndices.value[row];
+        if (segIdx == null) continue;
+        const startIdx = transients.value[segIdx];
+        const endIdx = transients.value[segIdx + 1];
+        const segStart = (startIdx / (waveform.value.length - 1)) * audioBuffer.duration;
+        const segEnd = (endIdx / (waveform.value.length - 1)) * audioBuffer.duration;
+        const duration = Math.max(0.1, segEnd - segStart);
+        // Create buffer source for this segment
+        const source = offlineCtx.createBufferSource();
+        if (normalizeSegments.value) {
+          // Normalize segment
+          const numChannels = audioBuffer.numberOfChannels;
+          const segLength = Math.floor(duration * sampleRate);
+          const segmentBuffer = offlineCtx.createBuffer(numChannels, segLength, sampleRate);
+          for (let ch = 0; ch < numChannels; ch++) {
+            const src = audioBuffer.getChannelData(ch);
+            const dst = segmentBuffer.getChannelData(ch);
+            const startSample = Math.floor(segStart * sampleRate);
+            const endSample = Math.min(startSample + segLength, src.length);
+            let max = 0;
+            for (let i = startSample; i < endSample; i++) {
+              if (Math.abs(src[i]) > max) max = Math.abs(src[i]);
+            }
+            const norm = max > 0 ? 1 / max : 1;
+            for (let i = 0; i < segLength && (startSample + i) < src.length; i++) {
+              dst[i] = src[startSample + i] * norm;
+            }
+          }
+          source.buffer = segmentBuffer;
+        } else {
+          source.buffer = audioBuffer;
+        }
+        source.playbackRate.value = playbackSpeed.value;
+        source.connect(offlineCtx.destination);
+        if (normalizeSegments.value) {
+          source.start(col * stepDuration);
+        } else {
+          source.start(col * stepDuration, segStart, duration);
+        }
+      }
+    }
+  }
+  const renderedBuffer = await offlineCtx.startRendering();
+  const wavBlob = encodeWAV(renderedBuffer);
+  const url = URL.createObjectURL(wavBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sequencer_export.wav';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+}
 // Built-in loops (update this list if you add more files to public/loops)
 const builtinLoops = [
   { label: 'Fake 909', value: '/soundchopper/loops/fake909.wav' },
   { label: 'Ping Pong', value: '/soundchopper/loops/ping pong.wav' },
+  { label: 'Synth', value: '/soundchopper/loops/synth.wav' },
 ];
 const selectedLoop = ref("");
 
@@ -245,16 +372,21 @@ function toggleSegmentEnabled(idx, e) {
 }
 function playFullSample() {
   if (!audioBuffer || !audioCtx) return;
-  // Stop previous source if any
-  if (audioCtx._currentSource) {
-    try { audioCtx._currentSource.stop(); } catch { }
-  }
+  stopFullSample();
   const source = audioCtx.createBufferSource();
   source.buffer = audioBuffer;
   source.connect(audioCtx.destination);
+  source.onended = () => {
+    isFullSamplePlaying.value = false;
+    if (audioCtx._currentSource === source) audioCtx._currentSource = null;
+  };
   source.start(0);
   audioCtx._currentSource = source;
+  isFullSamplePlaying.value = true;
 }
+// If user triggers other playback, stop full sample play state
+watch(isPlaying, (val) => { if (val) stopFullSample(); });
+onUnmounted(() => { stopFullSample(); });
 const patternLength = ref(8);
 
 const bpmDouble = ref(false);
