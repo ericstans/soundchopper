@@ -7,7 +7,13 @@
         <option v-for="loop in builtinLoops" :key="loop.value" :value="loop.value">{{ loop.label }}</option>
       </select>
     </div>
-    <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
+      <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.7em;">
+        <label style="font-size:1em; display: flex; align-items: center; gap: 0.3em;">
+          <input type="checkbox" v-model="guessBpmOnImport" style="margin-right:0.3em;" />
+          Guess BPM on import
+        </label>
+        <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
+      </div>
     <div v-if="waveform.length" style="margin: 1rem 0; display: flex; align-items: center; gap: 1rem;">
       <span>Sensitivity</span>
       <button @click="decreaseSensitivity">-</button>
@@ -151,6 +157,7 @@
   </div>
 </template>
 <script setup>
+const guessBpmOnImport = ref(false);
 function playSegmentByIndex(segIdx) {
   if (!audioBuffer || !audioCtx || !transients.value.length) return;
   const startIdx = transients.value[segIdx];
@@ -391,10 +398,12 @@ function onSelectLoop(e) {
     })
     .then(buffer => {
       audioBuffer = buffer;
-      // Try to detect BPM from buffer
-      let detectedBpm = detectBpmFromBuffer(buffer);
-      if (detectedBpm && detectedBpm >= 40 && detectedBpm <= 300) {
-        bpm.value = Math.min(detectedBpm * 2, 300);
+      // Try to detect BPM from buffer if enabled
+      if (guessBpmOnImport.value) {
+        let detectedBpm = detectBpmFromBuffer(buffer);
+        if (detectedBpm && detectedBpm >= 40 && detectedBpm <= 300) {
+          bpm.value = Math.min(detectedBpm * 2, 300);
+        }
       }
       getWaveformData(url).then(data => {
         waveform.value = data;
@@ -744,11 +753,13 @@ function onFileChange(e) {
     .then(buffer => {
       audioBuffer = buffer;
       // Try to detect BPM from buffer
-      let detectedBpm = detectBpmFromBuffer(buffer);
-      // Each column is an 8th note, so double the detected BPM
-      if (detectedBpm && detectedBpm >= 40 && detectedBpm <= 300) {
-        bpm.value = Math.min(detectedBpm * 2, 300);
-      }
+          if (guessBpmOnImport.value) {
+            let detectedBpm = detectBpmFromBuffer(buffer);
+            // Each column is an 8th note, so double the detected BPM
+            if (detectedBpm && detectedBpm >= 40 && detectedBpm <= 300) {
+              bpm.value = Math.min(detectedBpm * 2, 300);
+            }
+          }
       // Get waveform and transients
       getWaveformData(url).then(data => {
         waveform.value = data;
