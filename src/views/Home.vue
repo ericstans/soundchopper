@@ -158,13 +158,14 @@
       </div>
     </div>
     <div class="info" v-if="waveform.length">
-      <div class="info-title">Known issues:</div>
+      <div class="info-title">Stuff I'm going to fix:</div>
       <ul>
-        <li>Transient detection only uses velocity so doesn't get every transient.</li>
-        <li>Halving or doubling the sequence length doesn't apply correctly unless you pause and play.</li>
-        <li>The first note doesn't play after starting the sequence.</li>
+        <li>Transient detection needs improvement.</li>
+        <li>Loops dropdown is spicy on mobile. Stop the sequencer before trying to use it.</li>
+        <li>Halving or doubling the sequencer length doesn't apply correctly unless you pause and play.</li>
+        <li>The first note doesn't play after starting the sequencer.</li>
       </ul>
-      <div class="info-contact">Find something else? Contact me: <a href="mailto:eric@estansbury.net">eric@estansbury.net</a></div>
+      <div class="info-contact">Find another issue? Contact me: <a href="mailto:eric@estansbury.net">eric@estansbury.net</a></div>
     </div>
   </div>
 </template>
