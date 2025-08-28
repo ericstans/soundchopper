@@ -223,7 +223,7 @@ const isFullSamplePlaying = ref(false);
 // Real-time swing update: update swingFrac for next step
 let currentSwingFrac = 0;
 watch(swing, (newVal) => {
-  currentSwingFrac = swing.value / 100 * 0.5;
+  currentSwingFrac = swing.value / 100 ;
 });
 
 function toggleFullSamplePlay() {
