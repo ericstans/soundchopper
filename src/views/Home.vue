@@ -402,7 +402,7 @@ function onSelectLoop(e) {
       if (guessBpmOnImport.value) {
         let detectedBpm = detectBpmFromBuffer(buffer);
         if (detectedBpm && detectedBpm >= 40 && detectedBpm <= 300) {
-          bpm.value = Math.min(detectedBpm * 2, 300);
+          bpm.value = Math.min(detectedBpm, 200);
         }
       }
       getWaveformData(url).then(data => {
@@ -755,10 +755,6 @@ function onFileChange(e) {
       // Try to detect BPM from buffer
           if (guessBpmOnImport.value) {
             let detectedBpm = detectBpmFromBuffer(buffer);
-            // Each column is an 8th note, so double the detected BPM
-            if (detectedBpm && detectedBpm >= 40 && detectedBpm <= 300) {
-              bpm.value = Math.min(detectedBpm * 2, 300);
-            }
           }
       // Get waveform and transients
       getWaveformData(url).then(data => {
