@@ -158,7 +158,7 @@ const bpm = ref(120);
 const playbackSpeed = ref(1.0); // 1.0 = normal speed
 import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
 import { getWaveformData } from '../utils/waveform.js';
-import { detectTransients } from '../utils/transient.js';
+import { detectAdjustedTransients } from '../utils/transient.js';
 import { detectBpmFromBuffer } from '../utils/bpmDetect.js';
 const waveform = ref([]);
 const loading = ref(false);
@@ -508,7 +508,7 @@ function onFileChange(e) {
 
 function updateTransients() {
   if (!waveform.value.length) return;
-  transients.value = detectTransients(waveform.value, sensitivity.value, 5);
+  transients.value = detectAdjustedTransients(waveform.value, sensitivity.value, 5);
   console.log('Transients detected:', transients.value);
   if (transients.value.length) {
     const xs = transients.value.map(idx => (idx / (waveform.value.length - 1)) * svgWidth);
