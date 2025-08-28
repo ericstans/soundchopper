@@ -285,6 +285,7 @@ async function exportSequencerToWav() {
   const totalDuration = nCols * stepDuration;
   const sampleRate = audioBuffer.sampleRate;
   const offlineCtx = new OfflineAudioContext(audioBuffer.numberOfChannels, Math.ceil(totalDuration * sampleRate), sampleRate);
+  const FADE_MS = 0.008; // 8 ms fade-out
   // For each step, schedule enabled segments
   for (let col = 0; col < nCols; col++) {
     for (let row = 0; row < nRows; row++) {
@@ -299,6 +300,7 @@ async function exportSequencerToWav() {
         const duration = Math.max(0.1, segEnd - segStart);
         // Create buffer source for this segment
         const source = offlineCtx.createBufferSource();
+        let gainNode = offlineCtx.createGain();
         if (normalizeSegments.value) {
           // Normalize segment
           const numChannels = audioBuffer.numberOfChannels;
@@ -323,7 +325,11 @@ async function exportSequencerToWav() {
           source.buffer = audioBuffer;
         }
         source.playbackRate.value = playbackSpeed.value;
-        source.connect(offlineCtx.destination);
+        source.connect(gainNode);
+        gainNode.connect(offlineCtx.destination);
+        // Fade out at end
+        gainNode.gain.setValueAtTime(1, col * stepDuration);
+        gainNode.gain.linearRampToValueAtTime(0, col * stepDuration + duration - FADE_MS + FADE_MS);
         if (normalizeSegments.value) {
           source.start(col * stepDuration);
         } else {
