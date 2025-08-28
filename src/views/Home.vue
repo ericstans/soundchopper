@@ -1,5 +1,12 @@
 <template>
   <div class="waveform-loader">
+    <div style="margin-bottom: 0.7rem;">
+      <label for="builtin-loop-select" style="font-size:1em; margin-right:0.5em;">Built-in loops:</label>
+      <select id="builtin-loop-select" v-model="selectedLoop" @change="onSelectLoop" style="font-size:1em;">
+        <option value="">-- Select a loop --</option>
+        <option v-for="loop in builtinLoops" :key="loop.value" :value="loop.value">{{ loop.label }}</option>
+      </select>
+    </div>
     <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
     <div v-if="waveform.length" style="margin: 1rem 0; display: flex; align-items: center; gap: 1rem;">
       <span>Sensitivity</span>
@@ -114,6 +121,39 @@
   </div>
 </template>
 <script setup>
+// Built-in loops (update this list if you add more files to public/loops)
+const builtinLoops = [
+  { label: 'Fake 909', value: '/soundchopper/public/loops/fake909.wav' },
+  { label: 'Ping Pong', value: '/soundchopper/public/loops/ping pong.wav' },
+];
+const selectedLoop = ref("");
+
+function onSelectLoop(e) {
+  const url = selectedLoop.value;
+  if (!url) return;
+  loading.value = true;
+  // Simulate a file input event with the selected URL
+  audioUrl.value = url;
+  fetch(url)
+    .then(res => res.arrayBuffer())
+    .then(arrayBuffer => {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx.decodeAudioData(arrayBuffer);
+    })
+    .then(buffer => {
+      audioBuffer = buffer;
+      // Try to detect BPM from buffer
+      let detectedBpm = detectBpmFromBuffer(buffer);
+      if (detectedBpm && detectedBpm >= 40 && detectedBpm <= 300) {
+        bpm.value = Math.min(detectedBpm * 2, 300);
+      }
+      getWaveformData(url).then(data => {
+        waveform.value = data;
+        updateTransients();
+        loading.value = false;
+      });
+    });
+}
 const bpm = ref(120);
 const playbackSpeed = ref(1.0); // 1.0 = normal speed
 import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
