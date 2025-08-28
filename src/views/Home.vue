@@ -189,7 +189,7 @@ function playSegmentByIndex(segIdx) {
 const clickedSectionHighlight = ref(null);
 import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
 import { getWaveformData } from '../utils/waveform.js';
-import { detectAdjustedTransients } from '../utils/transient.js';
+import { detectAdjustedTransients, detectTransientsMultiFeature } from '../utils/transient.js';
 import { detectBpmFromBuffer } from '../utils/bpmDetect.js';
 const patternLength = ref(8);
 const bpmDouble = ref(false);
@@ -765,13 +765,22 @@ function onFileChange(e) {
     });
 }
 
-function updateTransients(debug = false) {
+function updateTransients(debug = true) {
   if (!waveform.value.length) return;
+  // new multi-feature transient detection
+  // transients.value = detectTransientsMultiFeature(waveform.value, {
+  //   frameSize: 128,
+  //   hopSize: 64,
+  //   ampWeight: 1.0,
+  //   fluxWeight: 1.0,
+  //   zcrWeight: 0.5,
+  //   threshold: sensitivity.value, // sensitivity slider controls threshold
+  //   minGap: 5
+  // });
   transients.value = detectAdjustedTransients(waveform.value, sensitivity.value, 5);
-  if (debug) console.log('Transients detected:', transients.value);
   if (transients.value.length) {
     const xs = transients.value.map(idx => (idx / (waveform.value.length - 1)) * svgWidth);
-    if (debug) console.log('Transient X positions:', xs);
+    if (debug) console.log('Transients detected:', xs);
   } else {
     if (debug) console.warn('No transients detected. Try lowering the threshold or using a more percussive audio file.');
   }
