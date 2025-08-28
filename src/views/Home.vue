@@ -151,7 +151,6 @@
   </div>
 </template>
 <script setup>
-// Play a segment by its index (used for both left and right click on transparent rects)
 function playSegmentByIndex(segIdx) {
   if (!audioBuffer || !audioCtx || !transients.value.length) return;
   const startIdx = transients.value[segIdx];
@@ -170,9 +169,10 @@ function playSegmentByIndex(segIdx) {
   source.buffer = audioBuffer;
   source.connect(gainNode);
   gainNode.connect(audioCtx.destination);
-  // Fade out at end
+  // Fade out at end: always FADE_MS seconds at the end of the segment
   gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration - FADE_MS + FADE_MS);
+  gainNode.gain.setValueAtTime(1, audioCtx.currentTime + duration - FADE_MS);
+  gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
   source.onended = () => { clickedSectionHighlight.value = null; };
   source.start(0, segStart, duration);
   audioCtx._currentSource = source;
@@ -240,6 +240,22 @@ function stopFullSample() {
     audioCtx._currentSource = null;
   }
   isFullSamplePlaying.value = false;
+}
+function stopAllSound() {
+  if (audioCtx && audioCtx._currentSource) {
+    try { audioCtx._currentSource.stop(); } catch {}
+    audioCtx._currentSource = null;
+  }
+  isFullSamplePlaying.value = false;
+  isPlaying.value = false;
+  currentStep.value = -1;
+  if (sequencerInterval) clearTimeout(sequencerInterval);
+  if (activeSources && activeSources.length) {
+    for (const src of activeSources) {
+      try { src.stop(); } catch {}
+    }
+    activeSources = [];
+  }
 }
 // Helper: encode AudioBuffer to WAV (16-bit PCM, stereo/mono)
 function encodeWAV(audioBuffer) {
@@ -361,6 +377,7 @@ const builtinLoops = [
 const selectedLoop = ref("");
 
 function onSelectLoop(e) {
+  stopAllSound();
   const url = selectedLoop.value;
   if (!url) return;
   loading.value = true;
@@ -707,6 +724,7 @@ function playSection(rowIdx) {
 }
 
 function onFileChange(e) {
+  stopAllSound();
   const file = e.target.files[0];
   if (!file) return;
   loading.value = true;
