@@ -162,11 +162,18 @@ function playSegmentByIndex(segIdx) {
   if (audioCtx._currentSource) {
     try { audioCtx._currentSource.stop(); } catch { }
   }
+  const duration = Math.max(0.1, segEnd - segStart);
+  const FADE_MS = 0.008; // 8 ms fade-out
+  const gainNode = audioCtx.createGain();
   const source = audioCtx.createBufferSource();
   source.buffer = audioBuffer;
-  source.connect(audioCtx.destination);
+  source.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  // Fade out at end
+  gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+  gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration - FADE_MS + FADE_MS);
   source.onended = () => { clickedSectionHighlight.value = null; };
-  source.start(0, segStart, Math.max(0.1, segEnd - segStart));
+  source.start(0, segStart, duration);
   audioCtx._currentSource = source;
   clickedSectionHighlight.value = { x: highlightX, width: highlightWidth };
 }
@@ -661,7 +668,9 @@ function playSection(rowIdx) {
     try { audioCtx._currentSource.stop(); } catch { }
   }
   let source;
+  let gainNode = audioCtx.createGain();
   activeSources = activeSources.filter(src => src && typeof src.stop === 'function');
+  const FADE_MS = 0.008; // 8 ms fade-out
   if (normalizeSegments.value) {
     // Create a new buffer for the segment and normalize it
     const numChannels = audioBuffer.numberOfChannels;
@@ -682,17 +691,25 @@ function playSection(rowIdx) {
         dst[i] = src[startSample + i] * norm;
       }
     }
-  source = audioCtx.createBufferSource();
-  source.buffer = segmentBuffer;
-  source.playbackRate.value = playbackSpeed.value;
-  source.connect(audioCtx.destination);
-  source.start(0);
+    source = audioCtx.createBufferSource();
+    source.buffer = segmentBuffer;
+    source.playbackRate.value = playbackSpeed.value;
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    // Fade out at end
+    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration - FADE_MS + FADE_MS);
+    source.start(0);
   } else {
-  source = audioCtx.createBufferSource();
-  source.buffer = audioBuffer;
-  source.playbackRate.value = playbackSpeed.value;
-  source.connect(audioCtx.destination);
-  source.start(0, segStart, duration);
+    source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.playbackRate.value = playbackSpeed.value;
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    // Fade out at end
+    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration - FADE_MS + FADE_MS);
+    source.start(0, segStart, duration);
   }
   audioCtx._currentSource = source;
   if (source) activeSources.push(source);
@@ -752,7 +769,6 @@ function decreaseSensitivity() {
   sensitivity.value = Math.max(0.01, sensitivity.value - 0.02);
   updateTransients();
 }
-
 
 function playAudio(event) {
   if (!audioBuffer || !audioCtx) return;
