@@ -60,6 +60,16 @@
           :class="{ active: cell, playing: isPlaying && isCellPlaying(rowIdx, colIdx) }"
           @click="toggleCell(rowIdx, colIdx)" @contextmenu.prevent="clearCell(rowIdx, colIdx)"></div>
       </div>
+      <!-- Lock icons row -->
+      <div class="sequencer-lock-row" style="display: flex; gap: 4px; margin-bottom: 0.5rem; justify-content: left;">
+        <button v-for="col in patternLength" :key="'lock-' + (col-1)"
+          @click="toggleColumnLock(col-1)"
+          :title="columnLocks[col-1] ? 'Unlock column' : 'Lock column'"
+          style="background: none; border: none; cursor: pointer; padding: 0; width: 32px; height: 24px; display: flex; align-items: center; justify-content: center;">
+          <svg v-if="columnLocks[col-1]" width="20" height="20" viewBox="0 0 20 20"><rect x="4" y="8" width="12" height="8" rx="2" fill="#42b983"/><path d="M7 8V6a3 3 0 0 1 6 0v2" stroke="#fff" stroke-width="2" fill="none"/></svg>
+          <svg v-else width="20" height="20" viewBox="0 0 20 20"><rect x="4" y="8" width="12" height="8" rx="2" fill="#888"/><path d="M7 8V6a3 3 0 0 1 6 0v2" stroke="#fff" stroke-width="2" fill="none"/><rect x="8.5" y="12" width="3" height="3" rx="1.5" fill="#fff"/></svg>
+        </button>
+      </div>
       <div class="sequencer-rotate-row"
         style="display: flex; justify-content: center; align-items: center; margin: 0.5rem 0 0.5rem 0; gap: 4px;">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
@@ -134,6 +144,43 @@
   </div>
 </template>
 <script setup>
+import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
+import { getWaveformData } from '../utils/waveform.js';
+import { detectAdjustedTransients } from '../utils/transient.js';
+import { detectBpmFromBuffer } from '../utils/bpmDetect.js';
+const patternLength = ref(8);
+const bpmDouble = ref(false);
+const bpm = ref(120);
+const playbackSpeed = ref(1.0); // 1.0 = normal speed
+const waveform = ref([]);
+const loading = ref(false);
+const svgWidth = 600;
+const svgHeight = 100;
+const audioUrl = ref(null);
+let audio = null;
+const transients = ref([]);
+let audioBuffer = null;
+let audioCtx = null;
+const sensitivity = ref(0.1); // Lower = more sensitive
+const isPlaying = ref(false);
+const currentStep = ref(-1);
+let sequencerInterval = null;
+let activeSources = [];
+const sequencer = ref([]);
+const segmentEnabled = ref([]);
+
+const columnLocks = ref([]);
+watch(patternLength, (len) => {
+  // Resize columnLocks array to match patternLength
+  if (columnLocks.value.length < len) {
+    columnLocks.value = columnLocks.value.concat(Array(len - columnLocks.value.length).fill(false));
+  } else if (columnLocks.value.length > len) {
+    columnLocks.value = columnLocks.value.slice(0, len);
+  }
+});
+function toggleColumnLock(colIdx) {
+  columnLocks.value[colIdx] = !columnLocks.value[colIdx];
+}
 // Swing amount (0-100)
 const swing = ref(0);
 const isFullSamplePlaying = ref(false);
@@ -297,30 +344,6 @@ function onSelectLoop(e) {
       });
     });
 }
-const bpm = ref(120);
-const playbackSpeed = ref(1.0); // 1.0 = normal speed
-import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
-import { getWaveformData } from '../utils/waveform.js';
-import { detectAdjustedTransients } from '../utils/transient.js';
-import { detectBpmFromBuffer } from '../utils/bpmDetect.js';
-const waveform = ref([]);
-const loading = ref(false);
-const svgWidth = 600;
-const svgHeight = 100;
-const audioUrl = ref(null);
-let audio = null;
-const transients = ref([]);
-let audioBuffer = null;
-let audioCtx = null;
-const sensitivity = ref(0.1); // Lower = more sensitive
-const isPlaying = ref(false);
-const currentStep = ref(-1);
-let sequencerInterval = null;
-let activeSources = [];
-const sequencer = ref([]);
-// Track enabled/disabled state for each segment (between transients)
-const segmentEnabled = ref([]);
-
 // When transients change, reset enabled state (all enabled by default)
 watch(transients, (newTrans) => {
   segmentEnabled.value = Array(Math.max(0, newTrans.length - 1)).fill(true);
@@ -417,9 +440,6 @@ function playFullSample() {
 // If user triggers other playback, stop full sample play state
 watch(isPlaying, (val) => { if (val) stopFullSample(); });
 onUnmounted(() => { stopFullSample(); });
-const patternLength = ref(8);
-
-const bpmDouble = ref(false);
 const bpmInput = computed({
   get() {
     return bpm.value;
@@ -513,6 +533,7 @@ const patternDensity = ref(100); // percent chance for a column to get 1 square
 function randomizeSequencer() {
   const nRows = sequencer.value.length;
   for (let col = 0; col < patternLength.value; col++) {
+    if (columnLocks.value[col]) continue; // skip locked columns
     // Use patternDensity to decide if this column gets an active cell
     const hasActive = Math.random() < (patternDensity.value / 100);
     const activeRow = hasActive ? Math.floor(Math.random() * nRows) : -1;
