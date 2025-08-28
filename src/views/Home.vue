@@ -367,12 +367,12 @@ async function exportSequencerToWav() {
 }
 // Built-in loops (update this list if you add more files to public/loops)
 const builtinLoops = [
-  { label: 'Fake 909', value: '/soundchopper/loops/fake909.wav' },
-  { label: 'Ping Pong', value: '/soundchopper/loops/ping pong.wav' },
-  { label: 'Synth', value: '/soundchopper/loops/synth.wav' },
-  { label: 'track1', value: '/soundchopper/loops/track1.wav' },
-  { label: 'track2', value: '/soundchopper/loops/track2.wav' },
-  { label: 'track3', value: '/soundchopper/loops/track3.wav' },
+  { label: 'Acoustic Drums', value: '/soundchopper/loops/acousticdrums1.mp3' },
+  { label: 'Acoustic Drums 2', value: '/soundchopper/loops/acousticdrums2.mp3' },
+  { label: 'Beatbox', value: '/soundchopper/loops/beatbox.mp3' },
+  { label: 'Ping Pong', value: '/soundchopper/loops/ping pong.mp3' },
+  { label: 'track1', value: '/soundchopper/loops/track1.mp3' },
+  { label: 'track2', value: '/soundchopper/loops/track2.mp3' },
 ];
 const selectedLoop = ref("");
 
