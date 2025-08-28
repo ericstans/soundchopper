@@ -621,7 +621,7 @@ function toggleCell(row, col) {
   }
   // Turn on the clicked cell
   sequencer.value[row][col] = true;
-} 
+}
  
 function toggleSequencerPlay() {
   if (isPlaying.value) {
