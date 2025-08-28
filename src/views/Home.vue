@@ -39,7 +39,9 @@
           <rect :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth" y="0"
             :width="((transients[segIdx + 1] - transients[segIdx]) / (waveform.length - 1)) * svgWidth"
             :height="svgHeight" fill="transparent" style="cursor: pointer;"
-            @contextmenu.prevent="toggleSegmentEnabled(segIdx, $event)" />
+            @contextmenu.prevent="toggleSegmentEnabled(segIdx, $event)"
+            @click="playSegmentByIndex(segIdx)"
+          />
         </g>
         <!-- Grey overlay for disabled segments -->
         <g v-for="(enabled, segIdx) in segmentEnabled" :key="'overlay-' + segIdx">
@@ -50,6 +52,10 @@
         <!-- Highlight currently playing waveform section -->
         <rect v-if="isPlaying && currentStep.value >= 0 && playingSectionBounds" :x="playingSectionBounds.x" y="0"
           :width="playingSectionBounds.width" :height="svgHeight" fill="#42b983" fill-opacity="0.18" stroke="#42b983"
+          stroke-width="2" pointer-events="none" />
+        <!-- Highlight waveform section played by click -->
+        <rect v-if="clickedSectionHighlight" :x="clickedSectionHighlight.x" y="0"
+          :width="clickedSectionHighlight.width" :height="svgHeight" fill="#ff5252" fill-opacity="0.18" stroke="#ff5252"
           stroke-width="2" pointer-events="none" />
       </svg>
     </div>
@@ -144,6 +150,28 @@
   </div>
 </template>
 <script setup>
+// Play a segment by its index (used for both left and right click on transparent rects)
+function playSegmentByIndex(segIdx) {
+  if (!audioBuffer || !audioCtx || !transients.value.length) return;
+  const startIdx = transients.value[segIdx];
+  const endIdx = transients.value[segIdx + 1];
+  const segStart = (startIdx / (waveform.value.length - 1)) * audioBuffer.duration;
+  const segEnd = (endIdx / (waveform.value.length - 1)) * audioBuffer.duration;
+  const highlightX = (startIdx / (waveform.value.length - 1)) * svgWidth;
+  const highlightWidth = ((endIdx - startIdx) / (waveform.value.length - 1)) * svgWidth;
+  if (audioCtx._currentSource) {
+    try { audioCtx._currentSource.stop(); } catch { }
+  }
+  const source = audioCtx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(audioCtx.destination);
+  source.onended = () => { clickedSectionHighlight.value = null; };
+  source.start(0, segStart, Math.max(0.1, segEnd - segStart));
+  audioCtx._currentSource = source;
+  clickedSectionHighlight.value = { x: highlightX, width: highlightWidth };
+}
+// Highlight for waveform section played by click
+const clickedSectionHighlight = ref(null);
 import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
 import { getWaveformData } from '../utils/waveform.js';
 import { detectAdjustedTransients } from '../utils/transient.js';
@@ -728,39 +756,27 @@ function decreaseSensitivity() {
 
 function playAudio(event) {
   if (!audioBuffer || !audioCtx) return;
-  // Get click X position relative to SVG
-  const rect = event.target.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const percent = x / svgWidth;
-  const startTime = percent * audioBuffer.duration;
-  // Find nearest transient before and after
-  let segStart = 0;
-  let segEnd = audioBuffer.duration;
-  if (transients.value.length > 1) {
-    const idx = Math.floor(percent * (waveform.value.length - 1));
-    // Find the closest transient before idx
-    let prev = 0, next = waveform.value.length - 1;
-    for (let i = 0; i < transients.value.length; i++) {
-      if (transients.value[i] <= idx) prev = transients.value[i];
-      if (transients.value[i] > idx) { next = transients.value[i]; break; }
+  // Only handle clicks when there are no transients (single region)
+  if (!(transients.value.length > 1)) {
+    const rect = event.target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const percent = x / svgWidth;
+    const startTime = percent * audioBuffer.duration;
+    const segStart = startTime;
+    const segEnd = Math.min(audioBuffer.duration, segStart + 0.25);
+    let highlightX = percent * svgWidth;
+    let highlightWidth = ((segEnd - segStart) / audioBuffer.duration) * svgWidth;
+    if (audioCtx._currentSource) {
+      try { audioCtx._currentSource.stop(); } catch { }
     }
-    segStart = (prev / (waveform.value.length - 1)) * audioBuffer.duration;
-    segEnd = (next / (waveform.value.length - 1)) * audioBuffer.duration;
-    // Minimum segment length
-    if (segEnd - segStart < 0.1) segEnd = segStart + 0.25;
-  } else {
-    segStart = startTime;
-    segEnd = Math.min(audioBuffer.duration, segStart + 0.25);
+    const source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioCtx.destination);
+    source.onended = () => { clickedSectionHighlight.value = null; };
+    source.start(0, segStart, segEnd - segStart);
+    audioCtx._currentSource = source;
+    clickedSectionHighlight.value = { x: highlightX, width: highlightWidth };
   }
-  // Stop previous source if any
-  if (audioCtx._currentSource) {
-    try { audioCtx._currentSource.stop(); } catch { }
-  }
-  const source = audioCtx.createBufferSource();
-  source.buffer = audioBuffer;
-  source.connect(audioCtx.destination);
-  source.start(0, segStart, segEnd - segStart);
-  audioCtx._currentSource = source;
 }
 
 const waveformPoints = computed(() => {
