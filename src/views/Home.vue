@@ -30,7 +30,7 @@
           <label for="chop-style-select" style="margin-bottom: 0.25em;">Chop Style</label>
           <select id="chop-style-select" v-model="chopStyle" class="chop-style-select">
             <option value="multi">Transients</option>
-            <option value="simple">Transients (Simple)</option>
+            <option value="simple">Transients (old)</option>
           </select>
         </div>
         <div class="sensitivity-group">
@@ -259,7 +259,7 @@ let audio = null;
 const transients = ref([]);
 let audioBuffer = null;
 let audioCtx = null;
-const sensitivity = ref(0.2); // 0 = most sensitive, 1 = least sensitive (logarithmic)
+const sensitivity = ref(1.0); // 0 = most sensitive, 1 = least sensitive (logarithmic)
 const thresholdValue = computed(() => (0.001 * Math.pow(200, sensitivity.value)).toPrecision(3));
 const isPlaying = ref(false);
 const currentStep = ref(-1);
