@@ -498,9 +498,9 @@ function playSequencer() {
     // Classic swing: even+odd = 2*baseStepDuration
     // Even steps lenghened, odd steps shortened
     if (step % 2 === 0) {
-      return baseStepDuration * (1 - currentSwingFrac);
-    } else {
       return baseStepDuration * (1 + currentSwingFrac);
+    } else {
+      return baseStepDuration * (1 - currentSwingFrac);
     }
   }
 
@@ -508,20 +508,17 @@ function playSequencer() {
     if (!isPlaying.value) return;
     while (nextStepTime < audioCtx.currentTime + SCHEDULER_LOOKAHEAD) {
       const nSteps = patternLength.value;
+      // Update UI step immediately before scheduling audio
+      if (scheduledStep >= patternLength.value) {
+        currentStep.value = Math.floor(scheduledStep / 2);
+      } else {
+        currentStep.value = scheduledStep;
+      }
       for (let row = 0; row < nRows; row++) {
         if (sequencer.value[row] && sequencer.value[row][scheduledStep]) {
           playSectionAtTime(row, nextStepTime);
         }
       }
-      // Update UI step at the right time
-      setTimeout(() => {
-        // If pattern length changed and currentStep is out of bounds, wrap
-        if (scheduledStep >= patternLength.value) {
-          currentStep.value = Math.floor(scheduledStep / 2);
-        } else {
-          currentStep.value = scheduledStep;
-        }
-      }, (nextStepTime - audioCtx.currentTime) * 1000);
       // Advance to next step
       nextStepTime += getStepDuration(scheduledStep);
       scheduledStep = (scheduledStep + 1) % nSteps;
