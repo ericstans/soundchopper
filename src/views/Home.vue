@@ -155,7 +155,6 @@
       <ul>
         <li>Loops dropdown is spicy on mobile. Stop the sequencer before trying to use it.</li>
         <li>The first note doesn't play after starting the sequencer.</li>
-        <li>Playback speed isn't affecting the audio</li>
         <li>Changing sequence length isn't updating the length correctly again</li>
       </ul>
       <div class="info-contact">Find another issue? Contact me: <a
