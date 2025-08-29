@@ -1,61 +1,4 @@
 @import './base.css';
-/* Dice (randomize) button styling */
-.sequencer-random-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5em;
-  background: none;
-  color: #42b983;
-  border:none;
-  cursor: pointer;
-  margin: 0 8px;
-  transition: background 0.2s, color 0.2s;
-  margin-top: 10px;
-}
-.sequencer-random-btn:hover {
-  background: #42b983;
-  color: #fff;
-}
-/* Grid row for sequencer and lock row alignment */
-.sequencer-grid-row {
-  display: grid;
-  gap: 4px;
-  justify-content: center;
-  align-items: center;
-}
-/* Sequencer lock row and button styles */
-.sequencer-lock-row {
-  display: flex;
-  flex-direction: row;
-  gap: 4px;
-  margin-bottom: 8px;
-  align-items: center;
-  justify-content: center;
-}
-
-.sequencer-lock-btn {
-  width: 32px;
-  height: 32px;
-  background: none;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.2s;
-}
-.sequencer-lock-btn svg rect {
-  transition: fill 0.2s;
-}
-.sequencer-lock-btn:hover svg rect {
-  fill: #42b983 !important;
-}
-
-
 #app {
   margin: 0 auto;
   padding: 2rem;
@@ -80,6 +23,13 @@ a,
   body {
     display: flex;
   }
+}
+.play-sensitivity-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 25%;
+  margin-bottom: 1rem;
 }
 
 .info{
@@ -141,43 +91,8 @@ a,
 }
 
 .waveform-svg {
-  margin-top: 1rem;
   background: #222;
   border-radius: 4px;
-}
-
-.sequencer {
-  margin-top: rem;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-}
-
-.sequencer-row {
-  display: flex;
-  gap: 4px;
-}
-
-.sequencer-cell {
-  width: 32px;
-  height: 32px;
-  background: #333;
-  border: 1px solid #555;
-  border-radius: 4px;
-  transition: background 0.2s;
-  cursor: pointer;
-}
-
-.sequencer-cell.active {
-  background: #42b983;
-  border-color: #42b983;
-}
-
-.sequencer-cell.playing {
-  box-shadow: 0 0 0 3px #fff, 0 0 8px #42b983;
-  background: #fff;
-  border-color: #42b983;
 }
 
 .waveform-loader {
@@ -214,6 +129,7 @@ a,
   background: #222;
   color: #fff;
   font-size: 1rem;
+  margin-bottom: 1rem;
 }
 
 .guess-bpm-label {
@@ -281,111 +197,6 @@ input[type="file"] {
   margin-bottom: 1rem;
 }
 
-.sequencer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.sequencer-grid {
-  display: grid;
-  row-gap: 4px;
-}
-
-.sequencer-row {
-  display: grid;
-  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
-  column-gap: 4px;
-}
-
-.sequencer-lock-row {
-  display: grid;
-  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
-  column-gap: 4px;
-  margin-bottom: 0.5rem;
-  justify-items: center;
-}
-
-.sequencer-cell {
-  flex: 1;
-  height: 24px;
-  background: #222;
-  border: 1px solid #333;
-  border-radius: 4px;
-  cursor: pointer;
-  position: relative;
-}
-
-.sequencer-cell.active {
-  background: #42b983;
-}
-
-.sequencer-cell.playing {
-  background: #ff5252;
-}
-
-.sequencer-lock-row {
-  display: grid;
-  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
-  column-gap: 4px;
-  margin-bottom: 0.5rem;
-  justify-items: center;
-}
-
-.sequencer-lock-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sequencer-control-row {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  justify-content: center;
-}
-.rotate-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 4px;
-  background: #333;
-  color: #fff;
-  cursor: pointer;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-}
-
-.sequencer-play-btn {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
-  background: #42b983;
-  color: #fff;
-  font-size: 1.5rem;
-  cursor: pointer;
-  outline: none;
-  position: relative;
-  margin-top: 10px;
-}
-
-.sequencer-play-btn svg {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
 
 .controls {
   background: #222;
@@ -510,10 +321,4 @@ input[type="file"] {
 .info-contact a {
   color: #42b983;
 }
-/* Play button and sensitivity row */
-.play-sensitivity-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-}
+

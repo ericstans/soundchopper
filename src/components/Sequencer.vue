@@ -9,7 +9,6 @@
 					@mouseenter="onCellMouseEnter(rowIdx, colIdx, $event)" @mouseup="onCellMouseUp(rowIdx, colIdx, $event)"
 					@contextmenu.prevent="clearCell(rowIdx, colIdx)"></div>
 			</div>
-			<!-- Lock icons row -->
 			<div class="sequencer-lock-row">
 				<button v-for="col in patternLength" :key="'lock-' + (col - 1)" @click="toggleColumnLock(col - 1)"
 					:title="columnLocks[col - 1] ? 'Unlock column' : 'Lock column'" class="sequencer-lock-btn">
