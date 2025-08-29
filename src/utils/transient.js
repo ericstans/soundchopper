@@ -1,78 +1,110 @@
-// More sophisticated transient detection using amplitude, spectral flux, and zero-crossing rate
-// waveform: Float32Array or Array of samples (mono)
-// options: { frameSize, hopSize, ampWeight, fluxWeight, zcrWeight, threshold, minGap }
 export function detectTransientsMultiFeature(waveform, options = {}) {
-  const frameSize = options.frameSize || 1024;
-  const hopSize = options.hopSize || 256;
-  const ampWeight = options.ampWeight ?? 1.0;
-  const fluxWeight = options.fluxWeight ?? 1.0;
-  const zcrWeight = options.zcrWeight ?? 0.5;
-  const threshold = options.threshold ?? 0.3;
-  const minGap = options.minGap || 5;
+  // Simple, robust: use short energy window and diff, with normalization and minGap
+  const frameSize = options.frameSize ?? 1;
+  const hopSize = options.hopSize ?? 1;
+  if (options.debug) {
+    console.log('detectTransientsMultiFeature: frameSize =', frameSize, 'hopSize =', hopSize);
+  }
+  // If sensitivity is provided as a UI slider value (0-1, logarithmic), map to threshold
+  let threshold;
+  if (typeof options.sensitivity === 'number') {
+    // Map slider 0 (most sensitive) to 0.001, 1 (least sensitive) to 0.2
+    threshold = 0.001 * Math.pow(200, options.sensitivity); // 0.001 to 0.2
+  } else {
+    threshold = options.threshold ?? 0.08;
+  }
+  const minGap = options.minGap ?? 3;
+
+  // Normalize waveform
+  let max = 0;
+  for (let i = 0; i < waveform.length; i++) {
+    const abs = Math.abs(waveform[i]);
+    if (abs > max) max = abs;
+  }
+  let normWaveform = waveform;
+  if (max > 0 && max !== 1) {
+    normWaveform = waveform.map(v => v / max);
+  }
+
+  // Compute short-time energy
+  const energy = [];
+  for (let i = 0; i + frameSize <= normWaveform.length; i += hopSize) {
+    let sum = 0;
+    for (let j = 0; j < frameSize; j++) {
+      sum += normWaveform[i + j] * normWaveform[i + j];
+    }
+    energy.push(sum / frameSize);
+  }
+  // Normalize energy
+  const maxE = Math.max(...energy);
+  const minE = Math.min(...energy);
+  const normE = energy.map(e => (maxE > minE) ? (e - minE) / (maxE - minE) : 0);
+
+  // Compute energy difference (onset function)
+  const diff = [0];
+  for (let i = 1; i < normE.length; i++) {
+    diff.push(Math.max(0, normE[i] - normE[i - 1]));
+  }
+
+  // Debug: log waveform length, diff length, and peaks above threshold
+  if (options.debug) {
+    console.log('detectTransientsMultiFeature: waveform.length =', normWaveform.length);
+    console.log('detectTransientsMultiFeature: diff.length =', diff.length);
+    console.log('detectTransientsMultiFeature: diff (energy difference):', diff);
+    const peaks = diff.filter(v => v > threshold).length;
+    console.log('detectTransientsMultiFeature: # of values above threshold:', peaks);
+  }
+
+  const peakPicking = false; //options.peakPicking == false; // default true, set to false to disable
+  const zeroCrossingRefine = false ;//options.zeroCrossingRefine == false; // default true, set to false to disable
+
   const transients = [];
-  let lastTransient = -minGap;
-
-  // Helper: magnitude spectrum (no windowing for simplicity)
-  function magSpectrum(frame) {
-    const N = frame.length;
-    const re = new Float32Array(N/2);
-    const im = new Float32Array(N/2);
-    for (let k = 0; k < N/2; k++) {
-      for (let n = 0; n < N; n++) {
-        const angle = (2 * Math.PI * k * n) / N;
-        re[k] += frame[n] * Math.cos(angle);
-        im[k] -= frame[n] * Math.sin(angle);
-      }
-    }
-    return Array.from(re, (r, k) => Math.sqrt(r*r + im[k]*im[k]));
-  }
-
-  // Helper: zero-crossing rate
-  function zeroCrossingRate(frame) {
-    let count = 0;
-    for (let i = 1; i < frame.length; i++) {
-      if ((frame[i-1] <= 0 && frame[i] > 0) || (frame[i-1] >= 0 && frame[i] < 0)) count++;
-    }
-    return count / frame.length;
-  }
-
-  let prevFrame = null, prevSpec = null;
-  for (let i = 0; i + frameSize <= waveform.length; i += hopSize) {
-    const frame = waveform.slice(i, i + frameSize);
-    // Amplitude diff (energy)
-    let amp = 0;
-    for (let j = 0; j < frame.length; j++) amp += Math.abs(frame[j]);
-    amp /= frame.length;
-    let ampDiff = prevFrame ? Math.max(0, amp - prevFrame.amp) : 0;
-    // Spectral flux
-    const spec = magSpectrum(frame);
-    let flux = 0;
-    if (prevSpec) {
-      for (let k = 0; k < spec.length; k++) {
-        flux += Math.max(0, spec[k] - prevSpec[k]);
-      }
-      flux /= spec.length;
-    }
-    // Zero-crossing rate
-    const zcr = zeroCrossingRate(frame);
-    let zcrDiff = prevFrame ? Math.max(0, zcr - prevFrame.zcr) : 0;
-    // Combine features
-    const score = ampWeight * ampDiff + fluxWeight * flux + zcrWeight * zcrDiff;
-    // Peak picking
-    if (score > threshold && (i - lastTransient) > minGap * hopSize) {
-      // Optionally, refine to nearest zero-crossing in frame
-      let zeroCross = i;
-      for (let j = frame.length - 1; j > 0; j--) {
-        if (frame[j-1] <= 0 && frame[j] > 0) {
-          zeroCross = i + j;
-          break;
+  let last = -minGap;
+  if (peakPicking) {
+    for (let i = 1; i < diff.length - 1; i++) {
+      if (
+        diff[i] > threshold &&
+        diff[i] >= diff[i - 1] &&
+        diff[i] >= diff[i + 1] &&
+        (i - last) * hopSize > minGap
+      ) {
+        const frameStart = i * hopSize;
+        const frame = normWaveform.slice(frameStart, frameStart + frameSize);
+        let zeroCross = frameStart;
+        if (zeroCrossingRefine) {
+          for (let j = frame.length - 1; j > 0; j--) {
+            if (frame[j-1] <= 0 && frame[j] > 0) {
+              zeroCross = frameStart + j;
+              break;
+            }
+          }
         }
+        transients.push(zeroCross);
+        last = i;
       }
-      transients.push(zeroCross);
-      lastTransient = i;
     }
-    prevFrame = { amp, zcr };
-    prevSpec = spec;
+  } else {
+    // No peak picking: every value above threshold and minGap
+    for (let i = 1; i < diff.length; i++) {
+      if (
+        diff[i] > threshold &&
+        (i - last) * hopSize > minGap
+      ) {
+        const frameStart = i * hopSize;
+        const frame = normWaveform.slice(frameStart, frameStart + frameSize);
+        let zeroCross = frameStart;
+        if (zeroCrossingRefine) {
+          for (let j = frame.length - 1; j > 0; j--) {
+            if (frame[j-1] <= 0 && frame[j] > 0) {
+              zeroCross = frameStart + j;
+              break;
+            }
+          }
+        }
+        transients.push(zeroCross);
+        last = i;
+      }
+    }
   }
   return transients;
 }

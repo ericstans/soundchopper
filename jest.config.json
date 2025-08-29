@@ -1,0 +1,10 @@
+{
+  "testEnvironment": "node",
+  "transform": {
+    "^.+\\.js$": "babel-jest"
+  },
+  "moduleFileExtensions": ["js", "json", "node"],
+  "preset": null,
+  "globals": {},
+  "verbose": true
+}

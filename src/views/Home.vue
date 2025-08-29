@@ -35,9 +35,8 @@
           </div>
           <div class="sensitivity-controls">
             <span>Sensitivity</span>
-            <button @click="decreaseSensitivity">-</button>
-            <span>{{ sensitivity.toFixed(2) }}</span>
-            <button @click="increaseSensitivity">+</button>
+            <input type="range" min="0" max="1" step="0.01" v-model.number="sensitivity" />
+            <span>Threshold: {{ thresholdValue }}</span>
           </div>
         </div>
       </div>
@@ -158,6 +157,10 @@
 <script setup>
 import '../assets/main.css';
 import Sequencer from '../components/Sequencer.vue';
+import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
+import { getWaveformData } from '../utils/waveform.js';
+import { detectAdjustedTransients, detectTransientsMultiFeature } from '../utils/transient.js';
+import { detectBpmFromBuffer } from '../utils/bpmDetect.js';
 // Drag-to-enable state
 const isDragging = ref(false);
 const dragRow = ref(null);
@@ -234,10 +237,6 @@ function playSegmentByIndex(segIdx) {
 }
 // Highlight for waveform section played by click
 const clickedSectionHighlight = ref(null);
-import { ref, computed, onUnmounted, watch, nextTick } from 'vue';
-import { getWaveformData } from '../utils/waveform.js';
-import { detectAdjustedTransients, detectTransientsMultiFeature } from '../utils/transient.js';
-import { detectBpmFromBuffer } from '../utils/bpmDetect.js';
 const patternLength = ref(8);
 const bpmDouble = ref(false);
 const bpm = ref(120);
@@ -251,7 +250,8 @@ let audio = null;
 const transients = ref([]);
 let audioBuffer = null;
 let audioCtx = null;
-const sensitivity = ref(0.1); // Lower = more sensitive
+const sensitivity = ref(0.2); // 0 = most sensitive, 1 = least sensitive (logarithmic)
+const thresholdValue = computed(() => (0.001 * Math.pow(200, sensitivity.value)).toPrecision(3));
 const isPlaying = ref(false);
 const currentStep = ref(-1);
 let sequencerInterval = null;
@@ -825,44 +825,16 @@ function onFileChange(e) {
 function updateTransients(debug = true) {
   if (!waveform.value.length) return;
   // new multi-feature transient detection
-  // transients.value = detectTransientsMultiFeature(waveform.value, {
-  //   frameSize: 128,
-  //   hopSize: 64,
-  //   ampWeight: 1.0,
-  //   fluxWeight: 1.0,
-  //   zcrWeight: 0.5,
-  //   threshold: sensitivity.value, // sensitivity slider controls threshold
-  //   minGap: 5
-  // });
-  transients.value = detectAdjustedTransients(waveform.value, sensitivity.value, 5);
+  transients.value = detectTransientsMultiFeature(waveform.value, {
+    sensitivity: sensitivity.value,
+    debug
+  });
+  // transients.value = detectTransientsMultiFeature(waveform.value, sensitivity.value, 5);
   if (transients.value.length) {
     const xs = transients.value.map(idx => (idx / (waveform.value.length - 1)) * svgWidth);
     if (debug) console.log('Transients detected:', xs);
   } else {
     if (debug) console.warn('No transients detected. Try lowering the threshold or using a more percussive audio file.');
-  }
-}
-
-function increaseSensitivity() {
-  sensitivity.value = Math.min(1, sensitivity.value + 0.02);
-  updateTransients();
-}
-function decreaseSensitivity() {
-  sensitivity.value = Math.max(0.01, sensitivity.value - 0.02);
-  updateTransients();
-}
-
-function addOneRow() {
-  // Add a new row to the sequencer grid, default all cells to false
-  sequencer.value.push(Array(patternLength.value).fill(false));
-  segmentEnabled.value.push(true);
-}
-
-function removeOneRow() {
-  // Remove the last row if more than one row exists
-  if (sequencer.value.length > 1) {
-    sequencer.value.pop();
-    segmentEnabled.value.pop();
   }
 }
 
