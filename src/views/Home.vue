@@ -550,6 +550,7 @@ function playSectionAtTime(row, when) {
   const gainNode = audioCtx.createGain();
   const source = audioCtx.createBufferSource();
   source.buffer = audioBuffer;
+  source.playbackRate.value = playbackSpeed.value;
   source.connect(gainNode);
   gainNode.connect(audioCtx.destination);
   gainNode.gain.setValueAtTime(1, when);
