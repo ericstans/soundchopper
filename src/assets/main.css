@@ -57,7 +57,6 @@
 
 
 #app {
-  max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   font-weight: normal;
@@ -182,7 +181,6 @@ a,
 }
 
 .waveform-loader {
-  max-width: 800px;
   margin: 0 auto;
   padding: 1rem;
   background: #111;
@@ -203,6 +201,14 @@ a,
 .builtin-loop-select {
   width: 100%;
   padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.loop-select-container{
   border: 1px solid #333;
   border-radius: 4px;
   background: #222;
@@ -420,6 +426,7 @@ input[type="file"] {
 
 .normalize-label {
   color: #fff;
+  float:right;
 }
 
 .density-controls {

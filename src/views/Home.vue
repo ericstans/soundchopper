@@ -1,13 +1,13 @@
 <template>
   <div class="waveform-loader">
-    <div class="builtin-loop-select-container">
-      <select id="builtin-loop-select" v-model="selectedLoop" @change="onSelectLoop" class="builtin-loop-select">
-        <option value="">-- Select a loop --</option>
-        <option v-for="loop in builtinLoops" :key="loop.value" :value="loop.value">{{ loop.label }}</option>
-      </select>
-      <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
-
-      <!-- End sequencer block -->
+    <div>
+      <div class="loop-select-container">
+        <select id="builtin-loop-select" v-model="selectedLoop" @change="onSelectLoop" class="builtin-loop-select">
+          <option value="">-- Select a loop --</option>
+          <option v-for="loop in builtinLoops" :key="loop.value" :value="loop.value">{{ loop.label }}</option>
+        </select>
+        <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
+      </div>
       <div class="loading-text" v-if="loading">Loading...</div>
       <div class="play-sensitivity-row" v-if="waveform.length">
         <button class="circle-play-btn" @click="toggleFullSamplePlay"
