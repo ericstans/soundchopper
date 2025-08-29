@@ -48,7 +48,8 @@
         </div>
       </div>
       <div class="waveform-container" v-if="transients.length > 1">
-        <svg :width="svgWidth" :height="svgHeight" class="waveform-svg" @click="playAudio">
+        <div class="waveform-scroll">
+          <svg :viewBox="'0 0 ' + svgWidth + ' ' + svgHeight" class="waveform-svg" @click="playAudio">
           <polyline :points="waveformPoints" fill="none" stroke="#42b983" stroke-width="2" />
           <g v-for="(idx, segIdx) in transients" :key="'transient-' + idx">
             <line :x1="(idx / (waveform.length - 1)) * svgWidth" y1="0"
@@ -79,7 +80,8 @@
           <rect v-if="clickedSectionHighlight" :x="clickedSectionHighlight.x" y="0"
             :width="clickedSectionHighlight.width" :height="svgHeight" fill="#ff5252" fill-opacity="0.18"
             stroke="#ff5252" stroke-width="2" class="waveform-section-clicked" />
-        </svg>
+          </svg>
+        </div>
       </div>
       <Sequencer
         :transients="transients"
