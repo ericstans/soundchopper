@@ -492,7 +492,6 @@ function playSequencer() {
   currentStep.value = -1;
   scheduledStep = 0;
   const nRows = sequencer.value.length;
-  const nSteps = patternLength.value;
   const baseStepDuration = 60 / effectiveBpm.value / 2;
   currentSwingFrac = swing.value / 100;
   nextStepTime = audioCtx.currentTime + 0.05; // start just ahead of now
@@ -510,14 +509,21 @@ function playSequencer() {
   function scheduleSteps() {
     if (!isPlaying.value) return;
     while (nextStepTime < audioCtx.currentTime + SCHEDULER_LOOKAHEAD) {
-      // Schedule all notes for this step
+      const nSteps = patternLength.value;
       for (let row = 0; row < nRows; row++) {
         if (sequencer.value[row] && sequencer.value[row][scheduledStep]) {
           playSectionAtTime(row, nextStepTime);
         }
       }
       // Update UI step at the right time
-      setTimeout(() => { currentStep.value = scheduledStep; }, (nextStepTime - audioCtx.currentTime) * 1000);
+      setTimeout(() => {
+        // If pattern length changed and currentStep is out of bounds, wrap
+        if (scheduledStep >= patternLength.value) {
+          currentStep.value = Math.floor(scheduledStep / 2);
+        } else {
+          currentStep.value = scheduledStep;
+        }
+      }, (nextStepTime - audioCtx.currentTime) * 1000);
       // Advance to next step
       nextStepTime += getStepDuration(scheduledStep);
       scheduledStep = (scheduledStep + 1) % nSteps;
