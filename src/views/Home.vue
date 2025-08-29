@@ -876,8 +876,10 @@ function updateTransients(debug = true) {
       debug
     });
   } else if (chopStyle.value === 'simple') {
-    transients.value = detectAdjustedTransients(waveform.value, undefined, undefined);
-    if (debug) console.log('Transients (Simple) detected:', transients.value);
+    // Map sensitivity (0-1) to threshold (0.0001 to 0.2, same as multi)
+    const threshold = 0.0001 * Math.pow(200, sensitivity.value);
+    transients.value = detectAdjustedTransients(waveform.value, threshold, undefined);
+    if (debug) console.log('Transients (Simple) detected:', transients.value, 'Threshold:', threshold);
   }
   if (transients.value.length) {
     const xs = transients.value.map(idx => (idx / (waveform.value.length - 1)) * svgWidth);
