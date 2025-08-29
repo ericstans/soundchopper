@@ -1,27 +1,27 @@
 <template>
   <div class="waveform-loader">
-    <div class="builtin-loop-select-container" style="margin-bottom: 0.7rem;">
-      <label for="builtin-loop-select" style="font-size:1em; margin-right:0.5em;">Built-in loops:</label>
-      <select id="builtin-loop-select" v-model="selectedLoop" @change="onSelectLoop" style="font-size:1em;">
+    <div class="builtin-loop-select-container">
+      <label for="builtin-loop-select" class="builtin-loop-label">Built-in loops:</label>
+      <select id="builtin-loop-select" v-model="selectedLoop" @change="onSelectLoop" class="builtin-loop-select">
         <option value="">-- Select a loop --</option>
         <option v-for="loop in builtinLoops" :key="loop.value" :value="loop.value">{{ loop.label }}</option>
       </select>
     </div>
-      <div class="guess-bpm-container" style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.7em;">
-        <label style="font-size:1em; display: flex; align-items: center; gap: 0.3em;">
-          <input type="checkbox" v-model="guessBpmOnImport" style="margin-right:0.3em;" />
+      <div class="guess-bpm-container">
+        <label class="guess-bpm-label">
+          <input type="checkbox" v-model="guessBpmOnImport" class="guess-bpm-checkbox" />
           Guess BPM on import
         </label>
         <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
       </div>
-    <div v-if="waveform.length" class="sensitivity-controls" style="margin: 1rem 0; display: flex; align-items: center; gap: 1rem;">
+  <div v-if="waveform.length" class="sensitivity-controls">
       <span>Sensitivity</span>
       <button @click="decreaseSensitivity">-</button>
       <span>{{ sensitivity.toFixed(2) }}</span>
       <button @click="increaseSensitivity">+</button>
     </div>
-    <div class="loading-text" v-if="loading">Loading...</div>
-    <div class="full-sample-play-button-container" v-if="waveform.length" style="display: flex; align-items: center; gap: 1.2rem;">
+  <div class="loading-text" v-if="loading">Loading...</div>
+  <div class="full-sample-play-button-container" v-if="waveform.length">
       <button class="circle-play-btn" @click="toggleFullSamplePlay" :title="isFullSamplePlaying ? 'Stop' : 'Play full sample'">
         <svg v-if="!isFullSamplePlaying" viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
           <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
@@ -38,13 +38,13 @@
           <line v-if="segIdx > 0" :x1="(idx / (waveform.length - 1)) * svgWidth" y1="0"
             :x2="(idx / (waveform.length - 1)) * svgWidth" :y2="svgHeight"
             :stroke="segmentEnabled[segIdx - 1] ? '#ff5252' : '#888'" stroke-width="2" stroke-dasharray="4,2"
-            style="pointer-events: none;" />
+            class="waveform-segment-line" />
         </g>
         <!-- Add transparent rects for right-click toggling -->
         <g v-for="(enabled, segIdx) in segmentEnabled" :key="'togglearea-' + segIdx">
           <rect :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth" y="0"
             :width="((transients[segIdx + 1] - transients[segIdx]) / (waveform.length - 1)) * svgWidth"
-            :height="svgHeight" fill="transparent" style="cursor: pointer;"
+            :height="svgHeight" fill="transparent" class="waveform-segment-rect"
             @contextmenu.prevent="toggleSegmentEnabled(segIdx, $event)"
             @click="playSegmentByIndex(segIdx)"
           />
@@ -53,16 +53,16 @@
         <g v-for="(enabled, segIdx) in segmentEnabled" :key="'overlay-' + segIdx">
           <rect v-if="!enabled" :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth" y="0"
             :width="((transients[segIdx + 1] - transients[segIdx]) / (waveform.length - 1)) * svgWidth"
-            :height="svgHeight" fill="#888" fill-opacity="0.35" style="pointer-events: none;" />
+            :height="svgHeight" fill="#888" fill-opacity="0.35" class="waveform-segment-disabled" />
         </g>
         <!-- Highlight currently playing waveform section -->
         <rect v-if="isPlaying && currentStep.value >= 0 && playingSectionBounds" :x="playingSectionBounds.x" y="0"
           :width="playingSectionBounds.width" :height="svgHeight" fill="#42b983" fill-opacity="0.18" stroke="#42b983"
-          stroke-width="2" pointer-events="none" />
+          stroke-width="2" class="waveform-section-playing" />
         <!-- Highlight waveform section played by click -->
         <rect v-if="clickedSectionHighlight" :x="clickedSectionHighlight.x" y="0"
           :width="clickedSectionHighlight.width" :height="svgHeight" fill="#ff5252" fill-opacity="0.18" stroke="#ff5252"
-          stroke-width="2" pointer-events="none" />
+          stroke-width="2" class="waveform-section-clicked" />
       </svg>
     </div>
     <div v-if="transients.length > 1" class="sequencer">
@@ -77,24 +77,21 @@
           @contextmenu.prevent="clearCell(rowIdx, colIdx)"></div>
       </div>
       <!-- Lock icons row -->
-      <div class="sequencer-lock-row" style="display: flex; gap: 4px; margin-bottom: 0.5rem; justify-content: left;">
+  <div class="sequencer-lock-row">
         <button v-for="col in patternLength" :key="'lock-' + (col-1)"
           @click="toggleColumnLock(col-1)"
           :title="columnLocks[col-1] ? 'Unlock column' : 'Lock column'"
-          style="background: none; border: none; cursor: pointer; padding: 0; width: 32px; height: 24px; display: flex; align-items: center; justify-content: center;">
+          class="sequencer-lock-btn">
           <svg v-if="columnLocks[col-1]" width="20" height="20" viewBox="0 0 20 20"><rect x="4" y="8" width="12" height="8" rx="2" fill="#42b983"/><path d="M7 8V6a3 3 0 0 1 6 0v2" stroke="#fff" stroke-width="2" fill="none"/></svg>
           <svg v-else width="20" height="20" viewBox="0 0 20 20"><rect x="4" y="8" width="12" height="8" rx="2" fill="#888"/><path d="M7 8V6a3 3 0 0 1 6 0v2" stroke="#fff" stroke-width="2" fill="none"/><rect x="8.5" y="12" width="3" height="3" rx="1.5" fill="#fff"/></svg>
         </button>
       </div>
-      <div class="sequencer-rotate-row"
-        style="display: flex; justify-content: center; align-items: center; margin: 0.5rem 0 0.5rem 0; gap: 4px;">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
-          <button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left" style="width:32px;">&lt;</button>
-          <button class="rotate-btn" @click="halvePatternLength" title="Halve pattern length"
-            style="width:32px; font-size:1.2em;">-</button>
+  <div class="sequencer-rotate-row">
+  <div class="sequencer-rotate-col">
+          <button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left">&lt;</button>
+          <button class="rotate-btn halve-btn" @click="halvePatternLength" title="Halve pattern length">-</button>
         </div>
-        <button class="circle-play-btn" @click="toggleSequencerPlay" title="{{ isPlaying ? 'Pause' : 'Play' }}"
-          style="margin: 0 8px;">
+  <button class="circle-play-btn sequencer-play-btn" @click="toggleSequencerPlay" title="{{ isPlaying ? 'Pause' : 'Play' }}">
           <svg v-if="!isPlaying" viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
             <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
             <polygon points="16,12 30,20 16,28" fill="#42b983" />
@@ -105,54 +102,47 @@
             <rect x="22" y="12" width="5" height="16" rx="2" fill="#42b983" />
           </svg>
         </button>
-        <button @click="randomizeSequencer" title="Randomize pattern"
-          style="font-size:2em; background: none; color: #42b983; border: none; cursor: pointer;">
+  <button @click="randomizeSequencer" title="Randomize pattern" class="sequencer-random-btn">
           🎲
         </button>
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
-          <button class="rotate-btn" @click="rotateSequencerRight" title="Rotate Right"
-            style="width:32px;">&gt;</button>
-          <button class="rotate-btn" @click="doublePatternLength" title="Double pattern length"
-            style="width:32px; font-size:1.2em;">+</button>
+  <div class="sequencer-rotate-col">
+          <button class="rotate-btn" @click="rotateSequencerRight" title="Rotate Right">&gt;</button>
+          <button class="rotate-btn double-btn" @click="doublePatternLength" title="Double pattern length">+</button>
         </div>
       </div>
-      <div class="controls" style="margin-top:1rem;  align-items: center; justify-content: center; gap: 1.5rem;">
+  <div class="controls">
         <div class="controls-row">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <label for="bpm-input" style="font-size:1em;">BPM</label>
-            <input id="bpm-input" type="number" v-model.number="bpmInput" min="40" max="300" step="1"
-              style="width: 60px; font-size:1em; padding:0.2em 0.5em;" />
-            <label style="display: flex; align-items: center; gap: 0.2em; font-size: 0.95em; margin-left: 0.5em;">
-              <input type="checkbox" v-model="bpmDouble" style="margin-left: 0.5em;" />
+          <div class="bpm-controls">
+            <label for="bpm-input" class="bpm-label">BPM</label>
+            <input id="bpm-input" type="number" v-model.number="bpmInput" min="40" max="300" step="1" class="bpm-input" />
+            <label class="bpm-x2-label">
+              <input type="checkbox" v-model="bpmDouble" class="bpm-x2-checkbox" />
               x2
             </label>
           </div>
           <div class="controls-row">
-            <label style="display: flex; align-items: center; gap: 0.3em; font-size: 1em;">
-              <input type="checkbox" v-model="normalizeSegments" />
+            <label class="normalize-label">
+              <input type="checkbox" v-model="normalizeSegments" class="normalize-checkbox" />
               Normalize segments
             </label>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <label for="density-slider" style="font-size:1em;">Pattern density</label>
-            <input id="density-slider" type="range" min="0" max="100" v-model.number="patternDensity"
-              style="width: 80px;" />
+          <div class="density-controls">
+            <label for="density-slider" class="density-label">Pattern density</label>
+            <input id="density-slider" type="range" min="0" max="100" v-model.number="patternDensity" class="density-slider" />
             <span>{{ patternDensity }}%</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem;">
-            <label for="speed-slider" style="font-size:1em;">Playback speed</label>
-            <input id="speed-slider" type="range" min="0.5" max="2" step="0.01" v-model.number="playbackSpeed"
-              style="width: 120px;" />
+          <div class="speed-controls">
+            <label for="speed-slider" class="speed-label">Playback speed</label>
+            <input id="speed-slider" type="range" min="0.5" max="2" step="0.01" v-model.number="playbackSpeed" class="speed-slider" />
             <span>{{ playbackSpeed.toFixed(2) }}x</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem;">
-            <label for="swing-slider" style="font-size:1em;">Swing</label>
-            <input id="swing-slider" type="range" min="0" max="50" step="1" v-model.number="swing"
-              style="width: 120px;" />
+          <div class="swing-controls">
+            <label for="swing-slider" class="swing-label">Swing</label>
+            <input id="swing-slider" type="range" min="0" max="50" step="1" v-model.number="swing" class="swing-slider" />
             <span>{{ swing }}%</span>
           </div>
-          <div class="controls-row" style="text-align:center;">
-            <button @click="exportSequencerToWav" style="margin-bottom:1rem; font-size:1em; padding:0.5em 1em; background:#42b983; color:#fff; border:none; border-radius:4px; cursor:pointer;">Export to WAV</button>
+          <div class="controls-row export-row">
+            <button @click="exportSequencerToWav" class="export-btn">Export to WAV</button>
           </div>
         </div>
       </div>
@@ -887,3 +877,279 @@ const waveformPoints = computed(() => {
   }).join(' ');
 });
 </script>
+
+<style scoped>
+.waveform-loader {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+  background: #111;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.builtin-loop-select-container {
+  margin-bottom: 1rem;
+}
+.builtin-loop-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+.builtin-loop-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+}
+.guess-bpm-container {
+  margin-bottom: 1rem;
+}
+.guess-bpm-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+.guess-bpm-checkbox {
+  margin-right: 0.5rem;
+}
+input[type="file"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+}
+.sensitivity-controls {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.sensitivity-controls span {
+  color: #fff;
+  margin: 0 0.5rem;
+}
+.loading-text {
+  color: #fff;
+  margin-bottom: 1rem;
+}
+.full-sample-play-button-container {
+  margin-bottom: 1rem;
+}
+.circle-play-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #42b983;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+}
+.circle-play-btn svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.waveform-svg {
+  width: 100%;
+  height: 100px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+.sequencer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.sequencer-grid {
+  display: grid;
+  row-gap: 4px;
+}
+.sequencer-row {
+  display: grid;
+  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
+  column-gap: 4px;
+}
+.sequencer-lock-row {
+  display: grid;
+  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
+  column-gap: 4px;
+  margin-bottom: 0.5rem;
+  justify-items: center;
+}
+.sequencer-cell {
+  flex: 1;
+  height: 24px;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+.sequencer-cell.active {
+  background: #42b983;
+}
+.sequencer-cell.playing {
+  background: #ff5252;
+}
+.sequencer-lock-row {
+  display: grid;
+  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
+  column-gap: 4px;
+  margin-bottom: 0.5rem;
+  justify-items: center;
+}
+.sequencer-lock-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sequencer-rotate-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.rotate-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sequencer-play-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #42b983;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+}
+.sequencer-play-btn svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.controls {
+  background: #222;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+.controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.bpm-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+.bpm-label {
+  color: #fff;
+  margin-right: 0.5rem;
+}
+.bpm-input {
+  width: 60px;
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+}
+.bpm-x2-label {
+  color: #fff;
+}
+.normalize-label {
+  color: #fff;
+}
+.density-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+.density-label {
+  color: #fff;
+}
+.density-slider {
+  flex: 1;
+}
+.speed-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+.speed-label {
+  color: #fff;
+}
+.speed-slider {
+  flex: 1;
+}
+.swing-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+.swing-label {
+  color: #fff;
+}
+.swing-slider {
+  flex: 1;
+}
+.export-btn {
+  background: #42b983;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.info {
+  background: #222;
+  padding: 1rem;
+  border-radius: 4px;
+}
+.info-title {
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+.info-contact {
+  color: #fff;
+  margin-top: 0.5rem;
+}
+.info-contact a {
+  color: #42b983;
+}
+</style>

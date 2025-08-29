@@ -1,5 +1,61 @@
 @import './base.css';
 
+/* Dice (randomize) button styling */
+.sequencer-random-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  background: #222;
+  color: #42b983;
+  border: 1px solid #42b983;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.sequencer-random-btn:hover {
+  background: #42b983;
+  color: #fff;
+}
+/* Grid row for sequencer and lock row alignment */
+.sequencer-grid-row {
+  display: grid;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+/* Sequencer lock row and button styles */
+.sequencer-lock-row {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin-bottom: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.sequencer-lock-btn {
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+}
+.sequencer-lock-btn svg rect {
+  transition: fill 0.2s;
+}
+.sequencer-lock-btn:hover svg rect {
+  fill: #42b983 !important;
+}
+/* 
 #app {
   max-width: 1280px;
   margin: 0 auto;
@@ -25,7 +81,7 @@ a,
   body {
     display: flex;
   }
-}
+} */
 
 .info{
   padding-top:1em;
