@@ -26,8 +26,8 @@
             🎤
           </button>
         </div>
-        <div class="chop-style-group" style="margin-left: 1em;">
-          <label for="chop-style-select">Chop Style</label>
+        <div class="chop-style-group" style="margin-left: 1em; display: flex; flex-direction: column; align-items: flex-start;">
+          <label for="chop-style-select" style="margin-bottom: 0.25em;">Chop Style</label>
           <select id="chop-style-select" v-model="chopStyle" class="chop-style-select">
             <option value="multi">Transients</option>
             <option value="simple">Transients (Simple)</option>
@@ -43,7 +43,7 @@
           <div class="sensitivity-controls">
             <span>Sensitivity</span>
             <input type="range" min="0" max="1" step="0.01" v-model.number="sensitivity" />
-            <span>Threshold: {{ thresholdValue }}</span>
+            <span>{{ thresholdValue }}</span>
           </div>
         </div>
       </div>
@@ -497,12 +497,10 @@ function playSequencer() {
         playSection(row);
       }
     }
-    // Calculate delay for next step using current swing value
+    // Classic swing: only delay the second 16th note in each 8th note
     let stepDelay = baseStepDuration;
     if (step % 2 === 1) {
       stepDelay = baseStepDuration * (1 + currentSwingFrac);
-    } else if (step % 2 === 0) {
-      stepDelay = baseStepDuration * (1 - currentSwingFrac);
     }
     step = (step + 1) % nSteps;
     sequencerInterval = setTimeout(scheduleStep, stepDelay * 1000);

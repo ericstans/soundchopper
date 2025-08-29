@@ -45,13 +45,6 @@ a,
     display: flex;
   }
 }
-.play-sensitivity-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 25%;
-  margin-bottom: 1rem;
-}
 
 .info{
   padding-top:1em;
