@@ -5,7 +5,7 @@
         <option value="">-- Select a loop --</option>
         <option v-for="loop in builtinLoops" :key="loop.value" :value="loop.value">{{ loop.label }}</option>
       </select>
-        <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
+      <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
 
       <!-- End sequencer block -->
       <div class="loading-text" v-if="loading">Loading...</div>
@@ -36,7 +36,7 @@
           </div>
         </div>
       </div>
-      <div>
+      <div class="waveform-container" v-if="transients.length > 1">
         <svg :width="svgWidth" :height="svgHeight" class="waveform-svg" @click="playAudio">
           <polyline :points="waveformPoints" fill="none" stroke="#42b983" stroke-width="2" />
           <g v-for="(idx, segIdx) in transients" :key="'transient-' + idx">
@@ -95,7 +95,7 @@
           </div>
         </div>
       </div>
-      <div class="sequencer-rotate-row">
+      <div class="sequencer-rotate-row" v-if="transients.length > 1">
         <div class="sequencer-rotate-col">
           <button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left">&lt;</button>
           <button class="rotate-btn halve-btn" @click="halvePatternLength" title="Halve pattern length">-</button>
@@ -120,8 +120,8 @@
           <button class="rotate-btn double-btn" @click="doublePatternLength" title="Double pattern length">+</button>
         </div>
       </div>
-      <div class="controls">
-        <div class="controls-row">
+      <div class="controls" v-if="transients.length > 1">
+        <div>
           <div class="bpm-controls">
             <label for="bpm-input" class="bpm-label">BPM</label>
             <input id="bpm-input" type="number" v-model.number="bpmInput" min="40" max="300" step="1"
@@ -131,33 +131,39 @@
               x2
             </label>
           </div>
-          <div class="controls-row">
-            <label class="normalize-label">
-              <input type="checkbox" v-model="normalizeSegments" class="normalize-checkbox" />
-              Normalize segments
-            </label>
-          </div>
+        </div>
+        <label class="normalize-label">
+          <input type="checkbox" v-model="normalizeSegments" class="normalize-checkbox" />
+          Normalize segments
+        </label>
+        <div class="controls-row">
           <div class="density-controls">
             <label for="density-slider" class="density-label">Pattern density</label>
             <input id="density-slider" type="range" min="0" max="100" v-model.number="patternDensity"
               class="density-slider" />
             <span>{{ patternDensity }}%</span>
           </div>
+        </div>
+        <div class="controls-row">
+
           <div class="speed-controls">
             <label for="speed-slider" class="speed-label">Playback speed</label>
             <input id="speed-slider" type="range" min="0.5" max="2" step="0.01" v-model.number="playbackSpeed"
               class="speed-slider" />
             <span>{{ playbackSpeed.toFixed(2) }}x</span>
           </div>
+        </div>
+        <div class="controls-row">
+
           <div class="swing-controls">
             <label for="swing-slider" class="swing-label">Swing</label>
             <input id="swing-slider" type="range" min="0" max="50" step="1" v-model.number="swing"
               class="swing-slider" />
             <span>{{ swing }}%</span>
           </div>
-          <div class="controls-row export-row">
-            <button @click="exportSequencerToWav" class="export-btn">Export to WAV</button>
-          </div>
+        </div>
+        <div class="controls-row export-row">
+          <button @click="exportSequencerToWav" class="export-btn">Export to WAV</button>
         </div>
       </div>
     </div>
