@@ -478,34 +478,71 @@ const enabledSegmentIndices = computed(() => segmentEnabled.value
 
 // Patch playSequencer to use enabled segments
 
+// High-precision sequencer playback using Web Audio API scheduling
+let schedulerInterval = null;
+let nextStepTime = 0;
+let scheduledStep = 0;
+const SCHEDULER_LOOKAHEAD = 0.1; // seconds
+const SCHEDULER_INTERVAL = 25; // ms
+
 function playSequencer() {
   if (!audioBuffer || !audioCtx) return;
   isPlaying.value = true;
   currentStep.value = -1;
-  let step = 0;
+  scheduledStep = 0;
   const nRows = sequencer.value.length;
+  const nSteps = patternLength.value;
   const baseStepDuration = 60 / effectiveBpm.value / 2;
   currentSwingFrac = swing.value / 100;
+  nextStepTime = audioCtx.currentTime + 0.05; // start just ahead of now
 
-  function scheduleStep() {
-    if (!isPlaying.value) return;
-    // Always use the current pattern length
-    const nSteps = patternLength.value;
-    currentStep.value = step;
-    for (let row = 0; row < nRows; row++) {
-      if (sequencer.value[row] && sequencer.value[row][step]) {
-        playSection(row);
-      }
+  function getStepDuration(step) {
+    // Classic swing: even+odd = 2*baseStepDuration
+    // Even steps lenghened, odd steps shortened
+    if (step % 2 === 0) {
+      return baseStepDuration * (1 + currentSwingFrac);
+    } else {
+      return baseStepDuration * (1 - currentSwingFrac);
     }
-    // Classic swing: only delay the second 16th note in each 8th note
-    let stepDelay = baseStepDuration;
-    if (step % 2 === 1) {
-      stepDelay = baseStepDuration * (1 + currentSwingFrac);
-    }
-    step = (step + 1) % nSteps;
-    sequencerInterval = setTimeout(scheduleStep, stepDelay * 1000);
   }
-  scheduleStep();
+
+  function scheduleSteps() {
+    if (!isPlaying.value) return;
+    while (nextStepTime < audioCtx.currentTime + SCHEDULER_LOOKAHEAD) {
+      // Schedule all notes for this step
+      for (let row = 0; row < nRows; row++) {
+        if (sequencer.value[row] && sequencer.value[row][scheduledStep]) {
+          playSectionAtTime(row, nextStepTime);
+        }
+      }
+      // Update UI step at the right time
+      setTimeout(() => { currentStep.value = scheduledStep; }, (nextStepTime - audioCtx.currentTime) * 1000);
+      // Advance to next step
+      nextStepTime += getStepDuration(scheduledStep);
+      scheduledStep = (scheduledStep + 1) % nSteps;
+    }
+  }
+  schedulerInterval = setInterval(scheduleSteps, SCHEDULER_INTERVAL);
+}
+
+// Schedule a section to play at a precise AudioContext time
+function playSectionAtTime(row, when) {
+  if (!audioBuffer || !audioCtx || !transients.value.length) return;
+  const startIdx = transients.value[row];
+  const endIdx = transients.value[row + 1];
+  const segStart = (startIdx / (waveform.value.length - 1)) * audioBuffer.duration;
+  const segEnd = (endIdx / (waveform.value.length - 1)) * audioBuffer.duration;
+  const duration = Math.max(0.1, segEnd - segStart);
+  const FADE_MS = 0.008;
+  const gainNode = audioCtx.createGain();
+  const source = audioCtx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  gainNode.gain.setValueAtTime(1, when);
+  gainNode.gain.setValueAtTime(1, when + duration - FADE_MS);
+  gainNode.gain.linearRampToValueAtTime(0, when + duration);
+  source.start(when, segStart, duration);
 }
 
 // Patch isCellPlaying/isRowPlaying to use enabled segments
