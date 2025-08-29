@@ -107,9 +107,15 @@ a,
   }
 }
 
-.info{
-  padding-top:1em;
-  max-width:500px;
+/* Center the info box horizontally */
+.info {
+  background: #222;
+  padding: 1rem;
+  border-radius: 4px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1em;
 }
 .info-title{
   text-align: center;

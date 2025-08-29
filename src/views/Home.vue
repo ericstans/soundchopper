@@ -54,7 +54,7 @@
           <g v-for="(idx, segIdx) in transients" :key="'transient-' + idx">
             <line :x1="(idx / (waveform.length - 1)) * svgWidth" y1="0"
               :x2="(idx / (waveform.length - 1)) * svgWidth" :y2="svgHeight"
-              :stroke="segIdx === 0 ? (segmentEnabled[0] ? '#ff5252' : '#888') : (segmentEnabled[segIdx - 1] ? '#ff5252' : '#888')"
+              :stroke="segIdx === transients.length - 1 ? (segmentEnabled[segIdx - 1] ? '#ff5252' : '#888') : (segmentEnabled[segIdx] ? '#ff5252' : '#888')"
               stroke-width="2" stroke-dasharray="4,2"
               class="waveform-segment-line" />
           </g>
@@ -359,6 +359,7 @@ function encodeWAV(audioBuffer) {
 }
 
 async function exportSequencerToWav() {
+  console.log('Export: normalizeSegments.value =', normalizeSegments.value);
   if (!audioBuffer || !transients.value.length || !sequencer.value.length) return;
   const nRows = sequencer.value.length;
   const nCols = patternLength.value;
@@ -535,6 +536,7 @@ function playSequencer() {
 
 // Schedule a section to play at a precise AudioContext time
 function playSectionAtTime(row, when) {
+  console.log('Sequencer playback: normalizeSegments.value =', normalizeSegments.value);
   if (!audioBuffer || !audioCtx || !transients.value.length) return;
   const startIdx = transients.value[row];
   const endIdx = transients.value[row + 1];
@@ -549,14 +551,41 @@ function playSectionAtTime(row, when) {
   }
   const gainNode = audioCtx.createGain();
   const source = audioCtx.createBufferSource();
-  source.buffer = audioBuffer;
   source.playbackRate.value = playbackSpeed.value;
+  let useBuffer = audioBuffer;
+  if (normalizeSegments.value) {
+    // Normalize segment (like in export)
+    const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const segLength = Math.floor(duration * sampleRate);
+    const segmentBuffer = audioCtx.createBuffer(numChannels, segLength, sampleRate);
+    for (let ch = 0; ch < numChannels; ch++) {
+      const src = audioBuffer.getChannelData(ch);
+      const dst = segmentBuffer.getChannelData(ch);
+      const startSample = Math.floor(segStart * sampleRate);
+      const endSample = Math.min(startSample + segLength, src.length);
+      let max = 0;
+      for (let i = startSample; i < endSample; i++) {
+        if (Math.abs(src[i]) > max) max = Math.abs(src[i]);
+      }
+      const norm = max > 0 ? 1 / max : 1;
+      for (let i = 0; i < segLength && (startSample + i) < src.length; i++) {
+        dst[i] = src[startSample + i] * norm;
+      }
+    }
+    useBuffer = segmentBuffer;
+  }
+  source.buffer = useBuffer;
   source.connect(gainNode);
   gainNode.connect(audioCtx.destination);
   gainNode.gain.setValueAtTime(1, when);
   gainNode.gain.setValueAtTime(1, when + duration - FADE_MS);
   gainNode.gain.linearRampToValueAtTime(0, when + duration);
-  source.start(when, segStart, duration);
+  if (normalizeSegments.value) {
+    source.start(when);
+  } else {
+    source.start(when, segStart, duration);
+  }
   activeSources[row] = source;
 }
 
@@ -773,65 +802,6 @@ function stopSequencer() {
 onUnmounted(() => {
   stopSequencer();
 });
-
-function playSection(rowIdx) {
-  if (!audioBuffer || !audioCtx || transients.value.length < 2) return;
-  const startIdx = transients.value[rowIdx];
-  const endIdx = transients.value[rowIdx + 1];
-  const segStart = (startIdx / (waveform.value.length - 1)) * audioBuffer.duration;
-  const segEnd = (endIdx / (waveform.value.length - 1)) * audioBuffer.duration;
-  const duration = Math.max(0.1, segEnd - segStart);
-  // Stop previous source if any
-  if (audioCtx._currentSource) {
-    try { audioCtx._currentSource.stop(); } catch { }
-  }
-  let source;
-  let gainNode = audioCtx.createGain();
-  activeSources = activeSources.filter(src => src && typeof src.stop === 'function');
-  const FADE_MS = 0.008; // 8 ms fade-out
-  if (normalizeSegments.value) {
-    // Create a new buffer for the segment and normalize it
-    const numChannels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
-    const segLength = Math.floor(duration * sampleRate);
-    const segmentBuffer = audioCtx.createBuffer(numChannels, segLength, sampleRate);
-    for (let ch = 0; ch < numChannels; ch++) {
-      const src = audioBuffer.getChannelData(ch);
-      const dst = segmentBuffer.getChannelData(ch);
-      const startSample = Math.floor(segStart * sampleRate);
-      const endSample = Math.min(startSample + segLength, src.length);
-      let max = 0;
-      for (let i = startSample; i < endSample; i++) {
-        if (Math.abs(src[i]) > max) max = Math.abs(src[i]);
-      }
-      const norm = max > 0 ? 1 / max : 1;
-      for (let i = 0; i < segLength && (startSample + i) < src.length; i++) {
-        dst[i] = src[startSample + i] * norm;
-      }
-    }
-    source = audioCtx.createBufferSource();
-    source.buffer = segmentBuffer;
-    source.playbackRate.value = playbackSpeed.value;
-    source.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    // Fade out at end
-    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration - FADE_MS + FADE_MS);
-    source.start(0);
-  } else {
-    source = audioCtx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.playbackRate.value = playbackSpeed.value;
-    source.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    // Fade out at end
-    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration - FADE_MS + FADE_MS);
-    source.start(0, segStart, duration);
-  }
-  audioCtx._currentSource = source;
-  if (source) activeSources.push(source);
-}
 
 function onFileChange(e) {
   stopAllSound();
