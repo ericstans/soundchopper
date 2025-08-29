@@ -122,20 +122,21 @@
       </div>
       <div class="controls" v-if="transients.length > 1">
         <div>
-          <div class="bpm-controls">
-            <label for="bpm-input" class="bpm-label">BPM</label>
-            <input id="bpm-input" type="number" v-model.number="bpmInput" min="40" max="300" step="1"
-              class="bpm-input" />
-            <label class="bpm-x2-label">
-              <input type="checkbox" v-model="bpmDouble" class="bpm-x2-checkbox" />
-              x2
-            </label>
+          <div class="controls-row">
+              <label for="bpm-input" class="bpm-label">BPM</label>
+              <input id="bpm-input" type="number" v-model.number="bpmInput" min="40" max="300" step="1"
+                class="bpm-input" />
+              <label class="bpm-x2-label">
+                <input type="checkbox" v-model="bpmDouble" class="bpm-x2-checkbox" />
+                x2
+              </label>
+              <label class="normalize-label">
+                <input type="checkbox" v-model="normalizeSegments" class="normalize-checkbox" />
+                Normalize segments
+              </label>
           </div>
         </div>
-        <label class="normalize-label">
-          <input type="checkbox" v-model="normalizeSegments" class="normalize-checkbox" />
-          Normalize segments
-        </label>
+        
         <div class="controls-row">
           <div class="density-controls">
             <label for="density-slider" class="density-label">Pattern density</label>
@@ -168,7 +169,7 @@
       </div>
     </div>
     <div class="info" v-if="waveform.length">
-      <div class="info-title">Stuff I'm going to fix:</div>
+      <div class="info-title">Known issues:</div>
       <ul>
         <li>Transient detection needs improvement.</li>
         <li>Loops dropdown is spicy on mobile. Stop the sequencer before trying to use it.</li>
