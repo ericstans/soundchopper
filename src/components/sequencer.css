@@ -61,6 +61,7 @@
   gap: 2rem;
   margin-bottom: 1rem;
   justify-content: center;
+  font-size:32px;
 }
 
 .rotate-btn {
@@ -99,7 +100,6 @@
 }
 
 .sequencer-random-btn {
-  font-size: 40px;
   width: 40px;
   height: 40px;
   display: flex;

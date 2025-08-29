@@ -27,7 +27,8 @@
 		<div class="sequencer-control-row">
 			<div class="sequencer-rotate-col">
 				<button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left">&lt;</button>
-				<button class="rotate-btn halve-btn" @click="halvePatternLength" title="Halve pattern length">-</button>
+				<button class="rotate-btn" @click="removeOneColumn" title="Remove one column">-</button>
+				<button class="rotate-btn halve-btn" @click="halvePatternLength" title="Halve pattern length">÷2</button>
 			</div>
 			<button class="circle-play-btn sequencer-play-btn" @click="toggleSequencerPlay"
 				:title="isPlaying ? 'Pause' : 'Play'">
@@ -46,7 +47,8 @@
 			</button>
 			<div class="sequencer-rotate-col">
 				<button class="rotate-btn" @click="rotateSequencerRight" title="Rotate Right">&gt;</button>
-				<button class="rotate-btn double-btn" @click="doublePatternLength" title="Double pattern length">+</button>
+				<button class="rotate-btn" @click="addOneColumn" title="Add one column">+</button>
+				<button class="rotate-btn double-btn" @click="doublePatternLength" title="Double pattern length">x2</button>
 			</div>
 		</div>
 	</div>
@@ -75,6 +77,8 @@ const emit = defineEmits([
 	'halvePatternLength',
 	'randomizeSequencer',
 	'toggleSequencerPlay',
+	'addOneColumn',
+	'removeOneColumn',
 ]);
 function onCellMouseDown(row, col, e) { emit('cellMouseDown', row, col, e); }
 function onCellMouseEnter(row, col, e) { emit('cellMouseEnter', row, col, e); }
@@ -89,5 +93,8 @@ function randomizeSequencer() { emit('randomizeSequencer'); }
 function toggleSequencerPlay() { emit('toggleSequencerPlay'); }
 function isCellPlaying(rowIdx, colIdx) { return currentStep === colIdx && sequencer[rowIdx][colIdx]; }
 function isRowPlaying(rowIdx) { return currentStep >= 0 && sequencer[rowIdx][currentStep]; }
+
+function addOneColumn() { emit('addOneColumn'); }
+function removeOneColumn() { emit('removeOneColumn'); }
 </script>
 

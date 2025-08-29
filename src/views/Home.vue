@@ -92,6 +92,8 @@
         @halvePatternLength="halvePatternLength"
         @randomizeSequencer="randomizeSequencer"
         @toggleSequencerPlay="toggleSequencerPlay"
+        @addOneColumn="addOneColumn"
+        @removeOneColumn="removeOneColumn"
       />
       <div class="controls" v-if="transients.length > 1">
         <div>
@@ -850,6 +852,39 @@ function decreaseSensitivity() {
   updateTransients();
 }
 
+function addOneRow() {
+  // Add a new row to the sequencer grid, default all cells to false
+  sequencer.value.push(Array(patternLength.value).fill(false));
+  segmentEnabled.value.push(true);
+}
+
+function removeOneRow() {
+  // Remove the last row if more than one row exists
+  if (sequencer.value.length > 1) {
+    sequencer.value.pop();
+    segmentEnabled.value.pop();
+  }
+}
+
+function addOneColumn() {
+  // Add a new column to each row in the sequencer grid
+  for (let row = 0; row < sequencer.value.length; row++) {
+    sequencer.value[row].push(false);
+  }
+  patternLength.value++;
+  columnLocks.value.push(false);
+}
+
+function removeOneColumn() {
+  // Remove the last column from each row if more than one column exists
+  if (patternLength.value > 1) {
+    for (let row = 0; row < sequencer.value.length; row++) {
+      sequencer.value[row].pop();
+    }
+    patternLength.value--;
+    columnLocks.value.pop();
+  }
+}
 function playAudio(event) {
   if (!audioBuffer || !audioCtx) return;
   // Only handle clicks when there are no transients (single region)
