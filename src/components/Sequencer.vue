@@ -25,10 +25,12 @@
 			</div>
 		</div>
 		<div class="sequencer-control-row">
+      <div class="sequencer-rotate-col">
+        <button class="rotate-btn halve-btn" @click="halvePatternLength" title="Halve pattern length">÷2</button>
+      </div>
 			<div class="sequencer-rotate-col">
 				<button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left">&lt;</button>
 				<button class="rotate-btn" @click="removeOneColumn" title="Remove one column">-</button>
-				<button class="rotate-btn halve-btn" @click="halvePatternLength" title="Halve pattern length">÷2</button>
 			</div>
 			<button class="circle-play-btn sequencer-play-btn" @click="toggleSequencerPlay"
 				:title="isPlaying ? 'Pause' : 'Play'">
@@ -48,8 +50,10 @@
 			<div class="sequencer-rotate-col">
 				<button class="rotate-btn" @click="rotateSequencerRight" title="Rotate Right">&gt;</button>
 				<button class="rotate-btn" @click="addOneColumn" title="Add one column">+</button>
-				<button class="rotate-btn double-btn" @click="doublePatternLength" title="Double pattern length">x2</button>
 			</div>
+      <div class="sequencer-rotate-col">
+        <button class="rotate-btn double-btn" @click="doublePatternLength" title="Double pattern length">×2</button>
+      </div>
 		</div>
 	</div>
 </template>
