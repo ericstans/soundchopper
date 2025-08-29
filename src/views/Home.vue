@@ -154,8 +154,6 @@
       <div class="info-title">Known issues:</div>
       <ul>
         <li>Loops dropdown is spicy on mobile. Stop the sequencer before trying to use it.</li>
-        <li>The first note doesn't play after starting the sequencer.</li>
-        <li>Changing sequence length isn't updating the length correctly again</li>
       </ul>
       <div class="info-contact">Find another issue? Contact me: <a
           href="mailto:eric@estansbury.net">eric@estansbury.net</a></div>
@@ -489,7 +487,7 @@ const SCHEDULER_INTERVAL = 25; // ms
 function playSequencer() {
   if (!audioBuffer || !audioCtx) return;
   isPlaying.value = true;
-  currentStep.value = -1;
+  currentStep.value = 0;
   scheduledStep = 0;
   const nRows = sequencer.value.length;
   const baseStepDuration = 60 / effectiveBpm.value / 2;
