@@ -552,7 +552,7 @@ function halvePatternLength() {
     patternLength.value = newLength;
     // If currently playing, keep currentStep in bounds
     if (isPlaying.value && currentStep.value >= newLength) {
-      currentStep.value = 0;
+      currentStep.value = currentStep.value % newLength;
     }
   }
 }
