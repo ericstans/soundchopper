@@ -1,5 +1,4 @@
 @import './base.css';
-
 /* Dice (randomize) button styling */
 .sequencer-random-btn {
   width: 32px;
@@ -55,7 +54,8 @@
 .sequencer-lock-btn:hover svg rect {
   fill: #42b983 !important;
 }
-/* 
+
+
 #app {
   max-width: 1280px;
   margin: 0 auto;
@@ -81,7 +81,7 @@ a,
   body {
     display: flex;
   }
-} */
+}
 
 .info{
   padding-top:1em;
@@ -148,7 +148,7 @@ a,
 }
 
 .sequencer {
-  margin-top: 2rem;
+  margin-top: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -185,4 +185,327 @@ a,
   background: rgba(66, 185, 131, 0.08);
   border-radius: 6px;
   transition: background 0.2s;
+}
+
+.waveform-loader {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+  background: #111;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.builtin-loop-select-container {
+  margin-bottom: 1rem;
+}
+
+.builtin-loop-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.builtin-loop-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.guess-bpm-label {
+  display: block;
+  color: #fff;
+}
+
+.guess-bpm-checkbox {
+  margin-right: 0.5rem;
+}
+
+input[type="file"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.sensitivity-controls {
+  display: flex;
+  align-items: center;
+}
+
+.sensitivity-controls span {
+  color: #fff;
+  margin: 0 0.5rem;
+}
+
+.loading-text {
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.full-sample-play-button-container {
+  margin-bottom: 1rem;
+}
+
+.circle-play-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #42b983;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+}
+
+.circle-play-btn svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.waveform-svg {
+  width: 100%;
+  height: 100px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.sequencer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sequencer-grid {
+  display: grid;
+  row-gap: 4px;
+}
+
+.sequencer-row {
+  display: grid;
+  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
+  column-gap: 4px;
+}
+
+.sequencer-lock-row {
+  display: grid;
+  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
+  column-gap: 4px;
+  margin-bottom: 0.5rem;
+  justify-items: center;
+}
+
+.sequencer-cell {
+  flex: 1;
+  height: 24px;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.sequencer-cell.active {
+  background: #42b983;
+}
+
+.sequencer-cell.playing {
+  background: #ff5252;
+}
+
+.sequencer-lock-row {
+  display: grid;
+  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
+  column-gap: 4px;
+  margin-bottom: 0.5rem;
+  justify-items: center;
+}
+
+.sequencer-lock-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sequencer-rotate-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.rotate-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sequencer-play-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #42b983;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+}
+
+.sequencer-play-btn svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.controls {
+  background: #222;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.bpm-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.bpm-label {
+  color: #fff;
+  margin-right: 0.5rem;
+}
+
+.bpm-input {
+  width: 60px;
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.bpm-x2-label {
+  color: #fff;
+}
+
+.normalize-label {
+  color: #fff;
+}
+
+.density-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.density-label {
+  color: #fff;
+}
+
+.density-slider {
+  flex: 1;
+}
+
+.speed-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.speed-label {
+  color: #fff;
+}
+
+.speed-slider {
+  flex: 1;
+}
+
+.swing-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.swing-label {
+  color: #fff;
+}
+
+.swing-slider {
+  flex: 1;
+}
+
+.export-btn {
+  background: #42b983;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.info {
+  background: #222;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.info-title {
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.info-contact {
+  color: #fff;
+  margin-top: 0.5rem;
+}
+
+.info-contact a {
+  color: #42b983;
+}
+/* Play button and sensitivity row */
+.play-sensitivity-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
 }
