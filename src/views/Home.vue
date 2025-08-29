@@ -141,7 +141,6 @@
       <ul>
         <li>Transient detection needs improvement.</li>
         <li>Loops dropdown is spicy on mobile. Stop the sequencer before trying to use it.</li>
-        <li>Halving or doubling the sequencer length doesn't apply correctly unless you pause and play.</li>
         <li>The first note doesn't play after starting the sequencer.</li>
       </ul>
       <div class="info-contact">Find another issue? Contact me: <a
@@ -463,18 +462,20 @@ const enabledSegmentIndices = computed(() => segmentEnabled.value
   .filter(i => i !== null));
 
 // Patch playSequencer to use enabled segments
+
 function playSequencer() {
   if (!audioBuffer || !audioCtx) return;
   isPlaying.value = true;
   currentStep.value = -1;
   let step = 0;
   const nRows = sequencer.value.length;
-  const nSteps = patternLength.value;
   const baseStepDuration = 60 / effectiveBpm.value / 2;
   currentSwingFrac = swing.value / 100;
 
   function scheduleStep() {
     if (!isPlaying.value) return;
+    // Always use the current pattern length
+    const nSteps = patternLength.value;
     currentStep.value = step;
     for (let row = 0; row < nRows; row++) {
       if (sequencer.value[row] && sequencer.value[row][step]) {
@@ -483,11 +484,9 @@ function playSequencer() {
     }
     // Calculate delay for next step using current swing value
     let stepDelay = baseStepDuration;
-    // Odd steps (2nd, 4th, etc) are delayed by swing amount
     if (step % 2 === 1) {
       stepDelay = baseStepDuration * (1 + currentSwingFrac);
     } else if (step % 2 === 0) {
-      // Even steps after a swung odd step are shortened to keep the bar length
       stepDelay = baseStepDuration * (1 - currentSwingFrac);
     }
     step = (step + 1) % nSteps;
@@ -541,11 +540,23 @@ const bpmInput = computed({
   }
 });
 const effectiveBpm = computed(() => bpmDouble.value ? bpm.value * 2 : bpm.value);
+
 function halvePatternLength() {
   if (patternLength.value > 1) {
-    patternLength.value = Math.max(1, Math.floor(patternLength.value / 2));
+    const oldLength = patternLength.value;
+    const newLength = Math.max(1, Math.floor(oldLength / 2));
+    // For each row, trim the pattern
+    for (let row = 0; row < sequencer.value.length; row++) {
+      sequencer.value[row] = sequencer.value[row].slice(0, newLength);
+    }
+    patternLength.value = newLength;
+    // If currently playing, keep currentStep in bounds
+    if (isPlaying.value && currentStep.value >= newLength) {
+      currentStep.value = 0;
+    }
   }
 }
+
 
 function doublePatternLength() {
   if (patternLength.value >= 64) return;
@@ -554,7 +565,7 @@ function doublePatternLength() {
   // For each row, repeat the pattern in the new columns
   for (let row = 0; row < sequencer.value.length; row++) {
     const oldRow = sequencer.value[row].slice(0, oldLength);
-    sequencer.value[row] = oldRow.concat(oldRow.slice(0, newLength - oldLength));
+    sequencer.value[row] = oldRow.concat(Array(newLength - oldLength).fill(false));
   }
   patternLength.value = newLength;
 }
@@ -572,9 +583,9 @@ function resizeSequencerColumns() {
 
 watch(patternLength, () => {
   resizeSequencerColumns();
+  // If currently playing, keep currentStep in bounds
   if (isPlaying.value && currentStep.value >= patternLength.value) {
-    stopSequencer();
-    playSequencer();
+    currentStep.value = 0;
   }
 });
 function rotateSequencerLeft() {
