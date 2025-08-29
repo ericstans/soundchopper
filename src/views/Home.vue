@@ -264,6 +264,7 @@ const thresholdValue = computed(() => (0.001 * Math.pow(200, sensitivity.value))
 const isPlaying = ref(false);
 const currentStep = ref(-1);
 let sequencerInterval = null;
+// Track active sources per row to prevent overlap
 let activeSources = [];
 const sequencer = ref([]);
 const segmentEnabled = ref([]);
@@ -541,6 +542,11 @@ function playSectionAtTime(row, when) {
   const segEnd = (endIdx / (waveform.value.length - 1)) * audioBuffer.duration;
   const duration = Math.max(0.1, segEnd - segStart);
   const FADE_MS = 0.008;
+  // Stop any previous source for this row
+  if (activeSources[row]) {
+    try { activeSources[row].stop(); } catch {}
+    activeSources[row] = null;
+  }
   const gainNode = audioCtx.createGain();
   const source = audioCtx.createBufferSource();
   source.buffer = audioBuffer;
@@ -550,6 +556,7 @@ function playSectionAtTime(row, when) {
   gainNode.gain.setValueAtTime(1, when + duration - FADE_MS);
   gainNode.gain.linearRampToValueAtTime(0, when + duration);
   source.start(when, segStart, duration);
+  activeSources[row] = source;
 }
 
 // Patch isCellPlaying/isRowPlaying to use enabled segments
