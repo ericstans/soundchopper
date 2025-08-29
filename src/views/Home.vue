@@ -95,7 +95,7 @@
           </div>
         </div>
       </div>
-      <div class="sequencer-rotate-row" v-if="transients.length > 1">
+      <div class="sequencer-control-row" v-if="transients.length > 1">
         <div class="sequencer-rotate-col">
           <button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left">&lt;</button>
           <button class="rotate-btn halve-btn" @click="halvePatternLength" title="Halve pattern length">-</button>
