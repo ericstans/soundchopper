@@ -68,58 +68,26 @@
             stroke="#ff5252" stroke-width="2" class="waveform-section-clicked" />
         </svg>
       </div>
-      <div v-if="transients.length > 1" class="sequencer">
-        <div class="sequencer-grid" :style="{ '--pattern-length': patternLength }">
-          <div v-for="(row, rowIdx) in sequencer.length" :key="'row-' + rowIdx" class="sequencer-row"
-            v-show="segmentEnabled[rowIdx]" :class="{ 'playing-row': isPlaying && isRowPlaying(rowIdx) }">
-            <div v-for="(cell, colIdx) in sequencer[rowIdx]" :key="'cell-' + rowIdx + '-' + colIdx"
-              class="sequencer-cell" :class="{ active: cell, playing: isPlaying && isCellPlaying(rowIdx, colIdx) }"
-              @mousedown="onCellMouseDown(rowIdx, colIdx, $event)"
-              @mouseenter="onCellMouseEnter(rowIdx, colIdx, $event)" @mouseup="onCellMouseUp(rowIdx, colIdx, $event)"
-              @contextmenu.prevent="clearCell(rowIdx, colIdx)"></div>
-          </div>
-          <!-- Lock icons row -->
-          <div class="sequencer-lock-row">
-            <button v-for="col in patternLength" :key="'lock-' + (col - 1)" @click="toggleColumnLock(col - 1)"
-              :title="columnLocks[col - 1] ? 'Unlock column' : 'Lock column'" class="sequencer-lock-btn">
-              <svg v-if="columnLocks[col - 1]" width="20" height="20" viewBox="0 0 20 20">
-                <rect x="4" y="8" width="12" height="8" rx="2" fill="#42b983" />
-                <path d="M7 8V6a3 3 0 0 1 6 0v2" stroke="#fff" stroke-width="2" fill="none" />
-              </svg>
-              <svg v-else width="20" height="20" viewBox="0 0 20 20">
-                <rect x="4" y="8" width="12" height="8" rx="2" fill="#888" />
-                <path d="M7 8V6a3 3 0 0 1 6 0v2" stroke="#fff" stroke-width="2" fill="none" />
-                <rect x="8.5" y="12" width="3" height="3" rx="1.5" fill="#fff" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="sequencer-control-row" v-if="transients.length > 1">
-        <div class="sequencer-rotate-col">
-          <button class="rotate-btn" @click="rotateSequencerLeft" title="Rotate Left">&lt;</button>
-          <button class="rotate-btn halve-btn" @click="halvePatternLength" title="Halve pattern length">-</button>
-        </div>
-        <button class="circle-play-btn sequencer-play-btn" @click="toggleSequencerPlay"
-          title="{{ isPlaying ? 'Pause' : 'Play' }}">
-          <svg v-if="!isPlaying" viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
-            <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
-            <polygon points="16,12 30,20 16,28" fill="#42b983" />
-          </svg>
-          <svg v-else viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
-            <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
-            <rect x="13" y="12" width="5" height="16" rx="2" fill="#42b983" />
-            <rect x="22" y="12" width="5" height="16" rx="2" fill="#42b983" />
-          </svg>
-        </button>
-        <button @click="randomizeSequencer" title="Randomize pattern" class="sequencer-random-btn">
-          🎲
-        </button>
-        <div class="sequencer-rotate-col">
-          <button class="rotate-btn" @click="rotateSequencerRight" title="Rotate Right">&gt;</button>
-          <button class="rotate-btn double-btn" @click="doublePatternLength" title="Double pattern length">+</button>
-        </div>
-      </div>
+      <Sequencer
+        :transients="transients"
+        :patternLength="patternLength"
+        :segmentEnabled="segmentEnabled"
+        :sequencer="sequencer"
+        :columnLocks="columnLocks"
+        :isPlaying="isPlaying"
+        :currentStep="currentStep"
+        @cellMouseDown="onCellMouseDown"
+        @cellMouseEnter="onCellMouseEnter"
+        @cellMouseUp="onCellMouseUp"
+        @clearCell="clearCell"
+        @toggleColumnLock="toggleColumnLock"
+        @rotateSequencerLeft="rotateSequencerLeft"
+        @rotateSequencerRight="rotateSequencerRight"
+        @doublePatternLength="doublePatternLength"
+        @halvePatternLength="halvePatternLength"
+        @randomizeSequencer="randomizeSequencer"
+        @toggleSequencerPlay="toggleSequencerPlay"
+      />
       <div class="controls" v-if="transients.length > 1">
         <div>
           <div class="controls-row">
@@ -183,6 +151,7 @@
 </template>
 <script setup>
 import '../assets/main.css';
+import Sequencer from '../components/Sequencer.vue';
 // Drag-to-enable state
 const isDragging = ref(false);
 const dragRow = ref(null);

@@ -1,0 +1,120 @@
+/* Styles for the Sequencer component */
+.sequencer {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.sequencer-grid {
+  display: grid;
+  row-gap: 4px;
+}
+
+.sequencer-row {
+  display: grid;
+  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
+  column-gap: 4px;
+}
+
+.sequencer-lock-row {
+  display: grid;
+  grid-template-columns: repeat(var(--pattern-length, 8), 32px);
+  column-gap: 4px;
+  margin-bottom: 0.5rem;
+  justify-items: center;
+}
+
+.sequencer-cell {
+  flex: 1;
+  height: 24px;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.sequencer-cell.active {
+  background: #42b983;
+}
+
+.sequencer-cell.playing {
+  background: #ff5252;
+}
+
+.sequencer-lock-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sequencer-control-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.rotate-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sequencer-play-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #42b983;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  margin-top: 10px;
+}
+
+.sequencer-play-btn svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.sequencer-random-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  background: none;
+  color: #42b983;
+  border:none;
+  cursor: pointer;
+  margin: 0 8px;
+  transition: background 0.2s, color 0.2s;
+  margin-top: 10px;
+}
+
+.sequencer-random-btn:hover {
+  background: #42b983;
+  color: #fff;
+}
