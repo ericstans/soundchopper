@@ -562,10 +562,10 @@ function doublePatternLength() {
   if (patternLength.value >= 64) return;
   const oldLength = patternLength.value;
   const newLength = Math.min(64, oldLength * 2);
-  // For each row, repeat the pattern in the new columns
+  // For each row, copy the current pattern into the new columns (repeat pattern)
   for (let row = 0; row < sequencer.value.length; row++) {
     const oldRow = sequencer.value[row].slice(0, oldLength);
-    sequencer.value[row] = oldRow.concat(Array(newLength - oldLength).fill(false));
+    sequencer.value[row] = oldRow.concat(oldRow.slice(0, newLength - oldLength));
   }
   patternLength.value = newLength;
 }
