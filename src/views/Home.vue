@@ -1,27 +1,27 @@
 <template>
   <div class="waveform-loader">
-    <div style="margin-bottom: 0.7rem;">
+    <div class="builtin-loop-select-container" style="margin-bottom: 0.7rem;">
       <label for="builtin-loop-select" style="font-size:1em; margin-right:0.5em;">Built-in loops:</label>
       <select id="builtin-loop-select" v-model="selectedLoop" @change="onSelectLoop" style="font-size:1em;">
         <option value="">-- Select a loop --</option>
         <option v-for="loop in builtinLoops" :key="loop.value" :value="loop.value">{{ loop.label }}</option>
       </select>
     </div>
-      <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.7em;">
+      <div class="guess-bpm-container" style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.7em;">
         <label style="font-size:1em; display: flex; align-items: center; gap: 0.3em;">
           <input type="checkbox" v-model="guessBpmOnImport" style="margin-right:0.3em;" />
           Guess BPM on import
         </label>
         <input type="file" accept="audio/mp3,audio/wav" @change="onFileChange" />
       </div>
-    <div v-if="waveform.length" style="margin: 1rem 0; display: flex; align-items: center; gap: 1rem;">
+    <div v-if="waveform.length" class="sensitivity-controls" style="margin: 1rem 0; display: flex; align-items: center; gap: 1rem;">
       <span>Sensitivity</span>
       <button @click="decreaseSensitivity">-</button>
       <span>{{ sensitivity.toFixed(2) }}</span>
       <button @click="increaseSensitivity">+</button>
     </div>
-    <div v-if="loading">Loading...</div>
-    <div v-if="waveform.length" style="display: flex; align-items: center; gap: 1.2rem;">
+    <div class="loading-text" v-if="loading">Loading...</div>
+    <div class="full-sample-play-button-container" v-if="waveform.length" style="display: flex; align-items: center; gap: 1.2rem;">
       <button class="circle-play-btn" @click="toggleFullSamplePlay" :title="isFullSamplePlaying ? 'Stop' : 'Play full sample'">
         <svg v-if="!isFullSamplePlaying" viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
           <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
