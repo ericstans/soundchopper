@@ -51,9 +51,10 @@
         <svg :width="svgWidth" :height="svgHeight" class="waveform-svg" @click="playAudio">
           <polyline :points="waveformPoints" fill="none" stroke="#42b983" stroke-width="2" />
           <g v-for="(idx, segIdx) in transients" :key="'transient-' + idx">
-            <line v-if="segIdx > 0" :x1="(idx / (waveform.length - 1)) * svgWidth" y1="0"
+            <line :x1="(idx / (waveform.length - 1)) * svgWidth" y1="0"
               :x2="(idx / (waveform.length - 1)) * svgWidth" :y2="svgHeight"
-              :stroke="segmentEnabled[segIdx - 1] ? '#ff5252' : '#888'" stroke-width="2" stroke-dasharray="4,2"
+              :stroke="segIdx === 0 ? (segmentEnabled[0] ? '#ff5252' : '#888') : (segmentEnabled[segIdx - 1] ? '#ff5252' : '#888')"
+              stroke-width="2" stroke-dasharray="4,2"
               class="waveform-segment-line" />
           </g>
           <!-- Add transparent rects for right-click toggling -->
