@@ -495,13 +495,15 @@ function playSequencer() {
   currentStep.value = 0;
   scheduledStep = 0;
   const nRows = sequencer.value.length;
-  const baseStepDuration = 60 / effectiveBpm.value / 2;
+  // baseStepDuration is now a function to always use the latest effectiveBpm
+  const getBaseStepDuration = () => 60 / effectiveBpm.value / 2;
   currentSwingFrac = swing.value / 100;
   nextStepTime = audioCtx.currentTime + 0.05; // start just ahead of now
 
   function getStepDuration(step) {
     // Classic swing: even+odd = 2*baseStepDuration
     // Even steps lenghened, odd steps shortened
+    const baseStepDuration = getBaseStepDuration();
     if (step % 2 === 0) {
       return baseStepDuration * (1 + currentSwingFrac);
     } else {
@@ -752,20 +754,8 @@ function initSequencer() {
   sequencer.value = Array.from({ length: nRows }, () => Array(patternLength.value).fill(false));
 }
 
-// Restart sequencer with new BPM if changed while playing
-watch(bpm, (newBpm, oldBpm) => {
-  if (isPlaying.value) {
-    stopSequencer();
-    playSequencer();
-  }
-});
 // Also restart sequencer if bpmDouble changes
-watch(bpmDouble, (newVal, oldVal) => {
-  if (isPlaying.value && newVal !== oldVal) {
-    stopSequencer();
-    playSequencer();
-  }
-});
+// BPM and bpmDouble now update in realtime without restarting sequencer
 const normalizeSegments = ref(false);
 
 // Watch for changes in transients to re-init sequencer
