@@ -745,22 +745,6 @@ watch(transients, (newTrans, oldTrans) => {
   }
 });
 
-function toggleCell(row, col) {
-  if (col >= patternLength.value) return;
-  // If already active, turn it off
-  if (sequencer.value[row][col]) {
-    sequencer.value[row][col] = false;
-    return;
-  }
-  // Turn on only this cell in this column (classic behavior)
-  for (let r = 0; r < sequencer.value.length; r++) {
-    if (col < sequencer.value[r].length) {
-      sequencer.value[r][col] = false;
-    }
-  }
-  sequencer.value[row][col] = true;
-}
-
 function toggleSequencerPlay() {
   if (isPlaying.value) {
     stopSequencer();
@@ -775,7 +759,9 @@ function stopSequencer() {
   if (sequencerInterval) clearTimeout(sequencerInterval);
   if (activeSources && activeSources.length) {
     for (const src of activeSources) {
-      src.stop();
+      if (src && typeof src.stop === 'function') {
+        try { src.stop(); } catch {}
+      }
     }
     activeSources = [];
   }
