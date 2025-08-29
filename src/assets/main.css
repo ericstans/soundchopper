@@ -26,3 +26,107 @@ a,
     display: flex;
   }
 }
+
+.info{
+  padding-top:1em;
+  max-width:500px;
+}
+.info-title{
+  text-align: center;
+}
+.info-contact{
+  margin-top:1em;
+  text-align: center;
+}
+.circle-play-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  box-shadow: 0 2px 8px #0002;
+}
+
+.circle-play-btn:hover svg circle {
+  fill: #42b983;
+  stroke: #fff;
+}
+
+.circle-play-btn:hover svg polygon,
+.circle-play-btn:hover svg rect {
+  fill: #fff;
+}
+
+.rotate-btn {
+  background: #222;
+  color: #42b983;
+  border: 1px solid #42b983;
+  border-radius: 4px;
+  font-size: 1.5em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.rotate-btn:hover {
+  background: #42b983;
+  color: #fff;
+}
+
+.waveform-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.waveform-svg {
+  margin-top: 1rem;
+  background: #222;
+  border-radius: 4px;
+}
+
+.sequencer {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.sequencer-row {
+  display: flex;
+  gap: 4px;
+}
+
+.sequencer-cell {
+  width: 32px;
+  height: 32px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.sequencer-cell.active {
+  background: #42b983;
+  border-color: #42b983;
+}
+
+.sequencer-cell.playing {
+  box-shadow: 0 0 0 3px #fff, 0 0 8px #42b983;
+  background: #fff;
+  border-color: #42b983;
+}
+
+.sequencer-row.playing-row {
+  background: rgba(66, 185, 131, 0.08);
+  border-radius: 6px;
+  transition: background 0.2s;
+}
