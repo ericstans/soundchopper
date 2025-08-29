@@ -481,8 +481,8 @@ const enabledSegmentIndices = computed(() => segmentEnabled.value
 let schedulerInterval = null;
 let nextStepTime = 0;
 let scheduledStep = 0;
-const SCHEDULER_LOOKAHEAD = 0.1; // seconds
-const SCHEDULER_INTERVAL = 25; // ms
+const SCHEDULER_LOOKAHEAD = 0.15; // seconds (increased for high BPM reliability)
+const SCHEDULER_INTERVAL = 8; // ms (reduced for high BPM reliability)
 
 function playSequencer() {
   if (!audioBuffer || !audioCtx) return;
@@ -508,11 +508,13 @@ function playSequencer() {
     if (!isPlaying.value) return;
     while (nextStepTime < audioCtx.currentTime + SCHEDULER_LOOKAHEAD) {
       const nSteps = patternLength.value;
-      // Update UI step immediately before scheduling audio
-      if (scheduledStep >= patternLength.value) {
-        currentStep.value = Math.floor(scheduledStep / 2);
-      } else {
-        currentStep.value = scheduledStep;
+      // Only update UI if step changed
+      if (scheduledStep !== currentStep.value) {
+        if (scheduledStep >= patternLength.value) {
+          currentStep.value = Math.floor(scheduledStep / 2);
+        } else {
+          currentStep.value = scheduledStep;
+        }
       }
       for (let row = 0; row < nRows; row++) {
         if (sequencer.value[row] && sequencer.value[row][scheduledStep]) {
