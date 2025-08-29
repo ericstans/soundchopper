@@ -394,10 +394,12 @@ input[type="file"] {
   margin-bottom: 1rem;
 }
 
-.controls {
-  line-height:2rem
+.controls .controls-row {
+  margin-bottom: 1.5rem;
 }
-
+.controls .controls-row.export-row {
+  margin-bottom: 0
+}
 .bpm-controls {
   display: flex;
   align-items: center;
@@ -476,6 +478,7 @@ input[type="file"] {
 
 .export-row{
   text-align:center;
+  margin-bottom:0;
 }
 
 .export-btn {
@@ -486,7 +489,6 @@ input[type="file"] {
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
-  margin-top: 0.5rem;
 }
 
 .info {

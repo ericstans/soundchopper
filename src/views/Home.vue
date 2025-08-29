@@ -93,7 +93,7 @@
           <div class="controls-row">
               <label for="bpm-input" class="bpm-label">BPM</label>
               <input id="bpm-input" type="range" v-model.number="bpmInput" min="40" max="300" step="1" class="bpm-input-range" />
-              <input type="number" v-model.number="bpmInput" min="40" max="300" step="1" class="bpm-input-number" style="width:60px; margin-left:0.5em;" />
+              <input type="text" inputmode="numeric" pattern="[0-9]*" v-model.number="bpmInput" min="40" max="300" step="1" class="bpm-input-number" style="width:60px; margin-left:0.5em;" />
               <label class="bpm-x2-label">
                 <input type="checkbox" v-model="bpmDouble" class="bpm-x2-checkbox" />
                 x2
