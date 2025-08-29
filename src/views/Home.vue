@@ -67,7 +67,8 @@
           <g v-for="(enabled, segIdx) in segmentEnabled" :key="'overlay-' + segIdx">
             <rect v-if="!enabled" :x="(transients[segIdx] / (waveform.length - 1)) * svgWidth" y="0"
               :width="((transients[segIdx + 1] - transients[segIdx]) / (waveform.length - 1)) * svgWidth"
-              :height="svgHeight" fill="#888" fill-opacity="0.35" class="waveform-segment-disabled" />
+              :height="svgHeight" fill="#888" fill-opacity="0.35" class="waveform-segment-disabled"
+              @contextmenu.prevent="toggleSegmentEnabled(segIdx, $event)" />
           </g>
           <!-- Highlight currently playing waveform section -->
           <rect v-if="isPlaying && currentStep.value >= 0 && playingSectionBounds" :x="playingSectionBounds.x" y="0"
