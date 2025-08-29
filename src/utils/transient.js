@@ -8,8 +8,8 @@ export function detectTransientsMultiFeature(waveform, options = {}) {
   // If sensitivity is provided as a UI slider value (0-1, logarithmic), map to threshold
   let threshold;
   if (typeof options.sensitivity === 'number') {
-    // Map slider 0 (most sensitive) to 0.001, 1 (least sensitive) to 0.2
-    threshold = 0.001 * Math.pow(200, options.sensitivity); // 0.001 to 0.2
+    // Map slider 0 (most sensitive) to 0.0001, 1 (least sensitive) to 0.2
+    threshold = 0.0001 * Math.pow(200, options.sensitivity); // 0.0001 to 0.2
   } else {
     threshold = options.threshold ?? 0.08;
   }

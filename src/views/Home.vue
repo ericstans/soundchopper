@@ -26,6 +26,13 @@
             🎤
           </button>
         </div>
+        <div class="chop-style-group" style="margin-left: 1em;">
+          <label for="chop-style-select">Chop Style</label>
+          <select id="chop-style-select" v-model="chopStyle" class="chop-style-select">
+            <option value="multi">Transients</option>
+            <option value="simple">Transients (Simple)</option>
+          </select>
+        </div>
         <div class="sensitivity-group">
           <div class="guess-bpm-container">
             <label class="guess-bpm-label">
@@ -822,14 +829,23 @@ function onFileChange(e) {
     });
 }
 
+// Chop style selection
+const chopStyle = ref('multi');
+// Recalculate transients when chop style or sensitivity changes
+watch([chopStyle, sensitivity], () => {
+  updateTransients(false);
+});
 function updateTransients(debug = true) {
   if (!waveform.value.length) return;
-  // new multi-feature transient detection
-  transients.value = detectTransientsMultiFeature(waveform.value, {
-    sensitivity: sensitivity.value,
-    debug
-  });
-  // transients.value = detectTransientsMultiFeature(waveform.value, sensitivity.value, 5);
+  if (chopStyle.value === 'multi') {
+    transients.value = detectTransientsMultiFeature(waveform.value, {
+      sensitivity: sensitivity.value,
+      debug
+    });
+  } else if (chopStyle.value === 'simple') {
+    transients.value = detectAdjustedTransients(waveform.value, undefined, undefined);
+    if (debug) console.log('Transients (Simple) detected:', transients.value);
+  }
   if (transients.value.length) {
     const xs = transients.value.map(idx => (idx / (waveform.value.length - 1)) * svgWidth);
     if (debug) console.log('Transients detected:', xs);
