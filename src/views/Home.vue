@@ -10,18 +10,23 @@
       </div>
       <div class="loading-text" v-if="loading">Loading...</div>
       <div class="play-sensitivity-row" v-if="waveform.length">
-        <button class="circle-play-btn" @click="toggleFullSamplePlay"
-          :title="isFullSamplePlaying ? 'Stop' : 'Play full sample'">
-          <svg v-if="!isFullSamplePlaying" viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
-            <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
-            <polygon points="16,12 30,20 16,28" fill="#42b983" />
-          </svg>
-          <svg v-else viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
-            <circle cx="20" cy="20" r="19" fill="#222" stroke="#ff5252" stroke-width="2" />
-            <rect x="13" y="12" width="14" height="16" rx="2" fill="#ff5252" />
-          </svg>
-        </button>
-        <div>
+        <div class="play-mic-group">
+          <button class="circle-play-btn" @click="toggleFullSamplePlay"
+            :title="isFullSamplePlaying ? 'Stop' : 'Play full sample'">
+            <svg v-if="!isFullSamplePlaying" viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
+              <circle cx="20" cy="20" r="19" fill="#222" stroke="#42b983" stroke-width="2" />
+              <polygon points="16,12 30,20 16,28" fill="#42b983" />
+            </svg>
+            <svg v-else viewBox="0 0 40 40" width="32" height="32" aria-hidden="true">
+              <circle cx="20" cy="20" r="19" fill="#222" stroke="#ff5252" stroke-width="2" />
+              <rect x="13" y="12" width="14" height="16" rx="2" fill="#ff5252" />
+            </svg>
+          </button>
+          <button class="circle-mic-btn" @click="onMicClick" title="Record from microphone">
+            🎤
+          </button>
+        </div>
+        <div class="sensitivity-group">
           <div class="guess-bpm-container">
             <label class="guess-bpm-label">
               <input type="checkbox" v-model="guessBpmOnImport" class="guess-bpm-checkbox" />

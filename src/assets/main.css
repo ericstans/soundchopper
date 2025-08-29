@@ -1,4 +1,25 @@
 @import './base.css';
+/* Flex layout for play-sensitivity-row */
+.play-sensitivity-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+.play-mic-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sensitivity-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
 #app {
   margin: 0 auto;
   padding: 2rem;
@@ -66,6 +87,31 @@ a,
 .circle-play-btn:hover svg polygon,
 .circle-play-btn:hover svg rect {
   fill: #fff;
+}
+
+/* Microphone button style for play-sensitivity-row */
+.circle-mic-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #222;
+  color: #42b983;
+  font-size: 1.5rem;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.5rem;
+  transition: background 0.2s, color 0.2s;
+}
+.circle-mic-btn:hover {
+  background: #42b983;
+  color: #fff;
+}
+.circle-mic-btn svg {
+  position: relative;
 }
 
 .rotate-btn {
