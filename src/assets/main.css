@@ -1,4 +1,50 @@
 @import './base.css';
+/* Chop style group layout */
+.chop-style-group {
+  margin-left: 1em;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.chop-style-label {
+  margin-bottom: 0.25em;
+}
+
+@media (max-width: 600px) {
+  .waveform-loader {
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .play-sensitivity-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .chop-style-group {
+    margin-left: 0;
+    width: 100%;
+    align-items: stretch;
+  }
+  .sensitivity-group {
+    align-items: stretch;
+  }
+  .controls {
+    padding: 0.5rem;
+  }
+  .waveform-svg {
+    width: 100% !important;
+    min-width: 0;
+    height: 60px;
+  }
+  .sequencer-row, .sequencer-lock-row {
+    grid-template-columns: repeat(var(--pattern-length, 8), minmax(20px, 1fr));
+  }
+  .circle-play-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
 /* Flex layout for play-sensitivity-row */
 .play-sensitivity-row {
   display: flex;

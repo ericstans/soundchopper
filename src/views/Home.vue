@@ -154,7 +154,8 @@
     <div class="info" v-if="waveform.length">
       <div class="info-title">Known issues:</div>
       <ul>
-        <li>Loops dropdown is spicy on mobile. Stop the sequencer before trying to use it.</li>
+        <li>Dropdowns are spicy on mobile. Stop the sequencer before trying to use them.</li>
+        <li>Need better CSS for small screen widths..</li>
       </ul>
       <div class="info-contact">Find another issue? Contact me: <a
           href="mailto:eric@estansbury.net">eric@estansbury.net</a></div>
