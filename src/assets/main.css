@@ -181,12 +181,6 @@ a,
   border-color: #42b983;
 }
 
-.sequencer-row.playing-row {
-  background: rgba(66, 185, 131, 0.08);
-  border-radius: 6px;
-  transition: background 0.2s;
-}
-
 .waveform-loader {
   max-width: 800px;
   margin: 0 auto;
